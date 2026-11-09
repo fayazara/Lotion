@@ -120,6 +120,8 @@ final class Library {
     private(set) var noteIcons: [String: String] = [:]
     /// SF Symbol names chosen for folders, keyed by folder name.
     private(set) var folderIcons: [String: String] = [:]
+    /// Notes published with Lotion Share, keyed by relative path.
+    private(set) var publications: [String: Publication] = [:]
     var sort: NoteSort {
         didSet { UserDefaults.standard.set(sort.rawValue, forKey: Prefs.sort) }
     }
@@ -139,6 +141,7 @@ final class Library {
         covers = Self.readMetadata("covers.json", in: root) ?? [:]
         folderIcons = Self.readMetadata("folders.json", in: root) ?? [:]
         noteIcons = Self.readMetadata("notes.json", in: root) ?? [:]
+        publications = Self.readMetadata("published.json", in: root) ?? [:]
         sort = NoteSort(rawValue: UserDefaults.standard.string(forKey: Prefs.sort) ?? "") ?? .created
     }
 
@@ -341,6 +344,10 @@ final class Library {
             noteIcons[newPath] = icon
             writeMetadata(noteIcons, to: "notes.json")
         }
+        if let publication = publications.removeValue(forKey: oldPath) {
+            publications[newPath] = publication
+            savePublications()
+        }
         guard pinnedPaths.remove(oldPath) != nil else { return }
         pinnedPaths.insert(newPath)
         savePins()
@@ -395,6 +402,26 @@ final class Library {
         noteIcons[relativePath(of: note.url)] = symbol == NoteIcon.default ? nil : symbol
         writeMetadata(noteIcons, to: "notes.json")
     }
+
+    // MARK: Publishing
+
+    /// Where the note is published, if it is. A deleted note's page stays up
+    /// until it's unpublished from Settings → Cloud.
+    func publication(for note: Note) -> Publication? { publications[relativePath(of: note.url)] }
+
+    func setPublication(_ publication: Publication?, for note: Note) {
+        publications[relativePath(of: note.url)] = publication
+        savePublications()
+    }
+
+    /// Forgets a publication by its ID, after it was unpublished elsewhere.
+    func forgetPublication(id: String) {
+        let before = publications.count
+        publications = publications.filter { $0.value.id != id }
+        if publications.count != before { savePublications() }
+    }
+
+    private func savePublications() { writeMetadata(publications, to: "published.json") }
 
     // MARK: Metadata files
 

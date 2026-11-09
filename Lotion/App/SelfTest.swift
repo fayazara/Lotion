@@ -11,7 +11,13 @@
 #if DEBUG
 import AppKit
 import AVFoundation
+import SwiftUI
 import WebKit
+
+/// A borderless window that can be key, so its controls draw as active.
+private final class KeyWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+}
 
 enum SelfTest {
     static let openSettings = Notification.Name("LotionSelfTestOpenSettings")
@@ -132,6 +138,16 @@ enum SelfTest {
         }
         if UserDefaults.standard.string(forKey: "LotionSelfTestOnly") == "demo" {
             await demo(state)
+            log(failures == 0 ? "DONE all passed" : "DONE \(failures) failed")
+            return
+        }
+        if UserDefaults.standard.string(forKey: "LotionSelfTestOnly") == "share" {
+            await sharePopover(state)
+            log(failures == 0 ? "DONE all passed" : "DONE \(failures) failed")
+            return
+        }
+        if UserDefaults.standard.string(forKey: "LotionSelfTestOnly") == "cloud" {
+            await cloud(state)
             log(failures == 0 ? "DONE all passed" : "DONE \(failures) failed")
             return
         }
@@ -978,6 +994,164 @@ enum SelfTest {
     }
 
     // MARK: Demo library
+
+    /// The share popover in each of its states, light and dark, for a look.
+    /// Needs no worker. Snaps go to `-LotionSnapDir`.
+    private static func sharePopover(_ state: AppState) async {
+        let library = state.library
+        let cover = NSImage(size: NSSize(width: 600, height: 200), flipped: false) { rect in
+            NSGradient(colors: [.systemOrange, .systemPink, .systemPurple])?.draw(in: rect, angle: 20)
+            return true
+        }
+        if let tiff = cover.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
+            try? png.write(to: library.root.appending(path: "cover.png"))
+        }
+        try? "# Launch plan\n\nShipping Lotion on Tuesday.\n".write(to: library.root.appending(path: "Launch plan.md"), atomically: true, encoding: .utf8)
+        library.refreshFromDisk()
+        guard let note = library.notes.first(where: { $0.title == "Launch plan" }) else {
+            check(false, "the share test note is in the library")
+            return
+        }
+        library.setIcon("paperplane.fill", for: note)
+        library.setCover(NoteCover(file: library.root.appending(path: "cover.png").path), for: note)
+        if let dir = UserDefaults.standard.string(forKey: "LotionSnapDir") {
+            try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        }
+        let published = Publication(id: "k3h8x2m9q4wz", url: URL(string: "https://lotion-share.fayaz.workers.dev/n/k3h8x2m9q4wz")!,
+                                    published: note.modified.addingTimeInterval(-3600))
+        let states: [(String, Publication?, Bool)] = [("setup", nil, false), ("publish", nil, true), ("published", published, true)]
+        for dark in [false, true] {
+            let style = EditorStyle(theme: .paper, isDark: dark, noteFont: FontChoice.system, noteFontSize: 15,
+                                    lineSpacing: .comfortable, codeFont: FontChoice.mono, readableWidth: .medium, spellCheck: false)
+            for (name, publication, configured) in states {
+                var popover = SharePopover(note: note, library: library, style: style)
+                popover.forcedPublication = publication
+                popover.forcesConfigured = configured
+                let hosting = NSHostingView(rootView: popover.background(.windowBackground))
+                hosting.frame.size = hosting.fittingSize
+                let window = KeyWindow(contentRect: hosting.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+                window.isReleasedWhenClosed = false
+                window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+                window.contentView = hosting
+                NSApp.activate()
+                window.makeKeyAndOrderFront(nil)
+                await wait(0.6)
+                check(hosting.fittingSize.height > 150, "the \(name) state lays out", "\(hosting.fittingSize)")
+                await snap("share-\(name)-\(dark ? "dark" : "light")", window)
+                window.close()
+            }
+        }
+    }
+
+    /// Publishing to a Lotion Share worker, end to end. Launch with
+    /// `-cloudURL <worker>` and `-LotionCloudToken <token>`, against a scratch
+    /// library: the test writes its own note, image and file into it.
+    private static func cloud(_ state: AppState) async {
+        let library = state.library
+        let image = NSImage(size: NSSize(width: 8, height: 8), flipped: false) { rect in
+            NSColor.systemOrange.setFill()
+            rect.fill()
+            return true
+        }
+        if let tiff = image.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
+            try? png.write(to: library.root.appending(path: "pic.png"))
+        }
+        try? "Some notes\n".write(to: library.root.appending(path: "notes.txt"), atomically: true, encoding: .utf8)
+        try? """
+        # Cloud test
+
+        A note published from Lotion's self-test.
+
+        ![An orange square](pic.png)
+
+        [notes.txt](notes.txt)
+
+        ![Not here](missing.png)
+        """.write(to: library.root.appending(path: "Cloud test.md"), atomically: true, encoding: .utf8)
+        library.refreshFromDisk()
+        guard let note = library.notes.first(where: { $0.title == "Cloud test" }) else {
+            check(false, "the cloud test note is in the library")
+            return
+        }
+        check(CloudSettings.isConfigured, "the worker is configured", CloudSettings.workerURL?.absoluteString ?? "no URL")
+        library.setIcon("star.fill", for: note)
+        library.setCover(NoteCover(file: note.url.deletingLastPathComponent().appending(path: "pic.png").path), for: note)
+        let style = EditorStyle(theme: .paper, isDark: false, noteFont: FontChoice.serif, noteFontSize: 15,
+                                lineSpacing: .comfortable, codeFont: FontChoice.mono, readableWidth: .medium, spellCheck: false)
+
+        func fetch(_ url: URL) async -> (Int, String, String) {
+            guard let (data, response) = try? await URLSession.shared.data(from: url), let http = response as? HTTPURLResponse else {
+                return (0, "", "")
+            }
+            return (http.statusCode, http.value(forHTTPHeaderField: "Content-Type") ?? "", String(decoding: data, as: UTF8.self))
+        }
+
+        do {
+            let info = try await CloudClient.configured().checkCompatible()
+            check(info.apiVersion >= CloudSettings.requiredAPIVersion, "the worker speaks a compatible API", "\(info.apiVersion)")
+
+            let first = try await Publisher.publish(note, library: library, style: style)
+            let url = first.publication.url
+            check(library.publication(for: note)?.id == first.publication.id, "the library remembers the publication")
+            check(first.skipped == ["missing.png"], "a file that isn't there is reported, not fatal", "\(first.skipped)")
+
+            let (status, _, page) = await fetch(url)
+            check(status == 200 && page.contains("<title>Cloud test</title>"), "the published page loads", "\(status)")
+            check(page.contains("Published with Lotion"), "the page is Lotion's", String(page.prefix(200)))
+            check(!page.contains("ui-serif"), "the page uses the system font, not the note's serif")
+            let files = page.ranges(of: "/files/\(first.publication.id)/").count
+            check(files >= 4, "the image, file, cover and icon point at the worker", "\(files)")
+
+            // Every file the page links to is there, with the right type.
+            let links = Set(page.matches(of: /\/files\/[a-z0-9]+\/[0-9a-f]+\.[a-z]+/).map { String($0.output) })
+            var served = 0
+            for link in links {
+                let (code, type, _) = await fetch(URL(string: link, relativeTo: url)!)
+                if code == 200 { served += 1 }
+                if link.hasSuffix(".png") { check(type == "image/png", "PNGs are served as images", type) }
+            }
+            check(!links.isEmpty && served == links.count, "every linked file is served", "\(served)/\(links.count)")
+
+            // Updating keeps the address, and shows the change.
+            note.setText(note.text + "\nA line added after publishing.\n")
+            let second = try await Publisher.publish(note, library: library, style: style)
+            check(second.publication.url == url, "updating keeps the same link", second.publication.url.absoluteString)
+            let (_, _, updated) = await fetch(url)
+            check(updated.contains("A line added after publishing."), "the page shows the update")
+
+            let listed = try await CloudClient.configured().notes()
+            check(listed.contains { $0.id == first.publication.id }, "the worker lists the note")
+
+            try await Publisher.unpublish(note, library: library)
+            check(library.publication(for: note) == nil, "unpublishing forgets the link")
+            let (gone, _, _) = await fetch(url)
+            check(gone == 404, "the page is gone after unpublishing", "\(gone)")
+        } catch {
+            check(false, "publishing works", error.localizedDescription)
+        }
+
+        // For a look: Settings → Cloud, and the note left published.
+        if UserDefaults.standard.string(forKey: "LotionSnapDir") != nil {
+            if let result = try? await Publisher.publish(note, library: library, style: style) {
+                log("PUBLISHED \(result.publication.url.absoluteString)")
+            }
+            SettingsWindowController.show(pane: .cloud)
+            await wait(3)
+            if let dir = UserDefaults.standard.string(forKey: "LotionSnapDir") {
+                try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            }
+            await snap("cloud-settings", NSApp.windows.first { $0.frameAutosaveName == "SettingsWindow" })
+        }
+
+        // A wrong token is caught by Verify, with a clear message.
+        do {
+            _ = try await CloudClient(baseURL: CloudSettings.workerURL!, token: "wrong").info()
+            check(false, "a wrong token is refused")
+        } catch {
+            check((error as? CloudError).map { if case .unauthorized = $0 { true } else { false } } ?? false,
+                  "a wrong token is refused", error.localizedDescription)
+        }
+    }
 
     private static func demo(_ state: AppState) async {
         check(DemoLibrary.isEnabled, "the demo library is on")

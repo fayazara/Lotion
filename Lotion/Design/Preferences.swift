@@ -25,6 +25,7 @@ enum Prefs {
     static let tableWidth = "tableWidth"
     static let saveVideos = "saveVideos"
     static let linkPreviews = "linkPreviews"
+    static let cloudURL = "cloudURL"
 }
 
 // MARK: - Fonts

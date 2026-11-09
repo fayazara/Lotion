@@ -12,7 +12,7 @@ import AppKit
 import SwiftUI
 
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case appearance, editor, media
+    case appearance, editor, media, cloud
 
     var id: String { rawValue }
 
@@ -21,6 +21,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .appearance: "Appearance"
         case .editor: "Editor"
         case .media: "Media & Links"
+        case .cloud: "Cloud"
         }
     }
 
@@ -29,6 +30,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .appearance: "paintpalette.fill"
         case .editor: "textformat"
         case .media: "photo.fill.on.rectangle.fill"
+        case .cloud: "cloud.fill"
         }
     }
 }
@@ -107,6 +109,7 @@ struct SettingsView: View {
                 case .appearance: AppearancePane()
                 case .editor: EditorPane()
                 case .media: MediaPane()
+                case .cloud: CloudPane()
                 }
             }
             .navigationTitle(active.title)
@@ -155,7 +158,7 @@ struct SettingsView: View {
 // MARK: - Building blocks
 
 /// One pane: a native grouped form, as a Mac settings window should be.
-private struct SettingsPage<Content: View>: View {
+struct SettingsPage<Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     var body: some View {
@@ -168,7 +171,7 @@ private struct SettingsPage<Content: View>: View {
 }
 
 /// A row's title with a line of detail under it, free to wrap.
-private struct SettingsControlLabel: View {
+struct SettingsControlLabel: View {
     let title: String
     let detail: String?
 

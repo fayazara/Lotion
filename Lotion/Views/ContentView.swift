@@ -94,6 +94,9 @@ struct ContentView: View {
         #if DEBUG
         .onReceive(NotificationCenter.default.publisher(for: SelfTest.openSettings)) { _ in SettingsWindowController.show() }
         #endif
+        .onReceive(NotificationCenter.default.publisher(for: .cloudDidUnpublish)) { notification in
+            if let id = notification.object as? String { state.library.forgetPublication(id: id) }
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             state.library.refreshFromDisk()
         }
@@ -144,6 +147,11 @@ struct ContentView: View {
             .labelStyle(.iconOnly)
             .disabled(state.selectedNote == nil)
             .help("Edit as blocks or as Markdown (⌃⌘M)")
+        }
+        ToolbarItem(placement: .primaryAction) {
+            if let note = state.selectedNote, !note.isScratchpad {
+                ShareButton(note: note, library: state.library, style: editorStyle)
+            }
         }
         ToolbarItem(placement: .primaryAction) {
             Menu {
