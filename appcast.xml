@@ -28,6 +28,26 @@
     -->
 
     <item>
+      <title>Version 0.0.2</title>
+      <sparkle:version>2</sparkle:version>
+      <sparkle:shortVersionString>0.0.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 09 Nov 2026 15:01:07 +0000</pubDate>
+      <description><![CDATA[
+        <h2>What's New in 0.0.2</h2>
+        <ul>
+          <li>Lotion now runs on macOS 26 Tahoe. Earlier versions needed macOS 27.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/fayazara/Lotion/releases/download/v0.0.2/Lotion.dmg"
+        type="application/octet-stream"
+        sparkle:edSignature="8oWfL4JwB1QVULQ58Wo5gzGEteDY+o7Diaue11exD6c9jrrywXasD3Hy44oigRByIJEfHMJRGEvSl83B/20DBQ=="
+        length="12194219"
+      />
+    </item>
+
+    <item>
       <title>Version 0.0.1</title>
       <sparkle:version>1</sparkle:version>
       <sparkle:shortVersionString>0.0.1</sparkle:shortVersionString>
