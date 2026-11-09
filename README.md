@@ -47,6 +47,20 @@ the same popover. Settings → Cloud lists everything you've published.
 To update the worker, run the same prompt again. Verify Connection tells you
 when there's a newer version.
 
+## Install
+
+Download `Lotion.dmg` from the
+[latest release](https://github.com/fayazara/Lotion/releases/latest), or with
+Homebrew:
+
+```bash
+brew install --cask fayazara/tap/lotion
+```
+
+Lotion updates itself through [Sparkle](https://sparkle-project.org). Use
+**Lotion → Check for Updates…**, or turn automatic checks on or off in
+**Settings → Updates**.
+
 ## Building
 
 Requires macOS 27 and Xcode 27.
@@ -90,3 +104,19 @@ usually with `-LotionLibrary <scratch folder>`. Add `-LotionSelfTestOnly cloud`
 to test publishing end to end against a worker, passing `-cloudURL <worker URL>`
 and `-LotionCloudToken <token>`. A local worker works too: run `pnpm dev` in
 lotion-share and use `http://localhost:3000` with `local-dev-token`.
+
+## Releasing
+
+Releases are published with a small Go tool that archives, notarizes, packages
+and signs the app, then creates the GitHub release, updates `appcast.xml` (the
+Sparkle feed) and the Homebrew cask:
+
+```bash
+go run ./cmd/lotion-release -build -yes -set-version 0.0.2 -set-build 2 \
+  -notes "First change
+Second change"
+```
+
+Without `-build`, it expects an already exported, notarized `Lotion.app` in
+`~/Downloads`. See [the release skill](.agents/skills/release-lotion/SKILL.md)
+for the full workflow and troubleshooting.

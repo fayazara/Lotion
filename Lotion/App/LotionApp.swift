@@ -34,6 +34,10 @@ struct LotionApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     var state: AppState?
 
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        UpdaterManager.shared.start()
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         if let state, let note = state.selectedNote, note.isBlank {
             state.library.discardIfBlank(note)
@@ -50,6 +54,9 @@ struct LotionCommands: Commands {
     @AppStorage(Prefs.editorMode) private var editorMode: EditorMode = .blocks
 
     var body: some Commands {
+        CommandGroup(after: .appInfo) {
+            CheckForUpdatesButton()
+        }
         CommandGroup(replacing: .appSettings) {
             Button("Settings…") { SettingsWindowController.show() }
                 .keyboardShortcut(",")

@@ -12,7 +12,7 @@ import AppKit
 import SwiftUI
 
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case appearance, editor, media, cloud
+    case appearance, editor, media, cloud, updates
 
     var id: String { rawValue }
 
@@ -22,6 +22,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .editor: "Editor"
         case .media: "Media & Links"
         case .cloud: "Cloud"
+        case .updates: "Updates"
         }
     }
 
@@ -31,6 +32,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .editor: "textformat"
         case .media: "photo.fill.on.rectangle.fill"
         case .cloud: "cloud.fill"
+        case .updates: "arrow.triangle.2.circlepath"
         }
     }
 }
@@ -110,6 +112,7 @@ struct SettingsView: View {
                 case .editor: EditorPane()
                 case .media: MediaPane()
                 case .cloud: CloudPane()
+                case .updates: UpdatesPane()
                 }
             }
             .navigationTitle(active.title)
@@ -752,6 +755,38 @@ private struct MediaPane: View {
                 Toggle(isOn: $linkPreviews) {
                     SettingsControlLabel("Preview pages on hover",
                                          detail: "Rest the pointer on a link to see the page. Each preview is kept for a week.")
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Updates
+
+private struct UpdatesPane: View {
+    @ObservedObject private var updater = UpdaterManager.shared
+
+    private var version: String {
+        let info = Bundle.main.infoDictionary
+        let short = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "\(short) (\(build))"
+    }
+
+    var body: some View {
+        SettingsPage {
+            Section {
+                LabeledContent {
+                    Button("Check Now") { updater.checkForUpdates() }
+                        .disabled(!updater.canCheckForUpdates)
+                } label: {
+                    SettingsControlLabel("Lotion \(version)",
+                                         detail: "New versions are published on GitHub.")
+                }
+                Toggle(isOn: Binding(get: { updater.automaticallyChecksForUpdates },
+                                     set: { updater.automaticallyChecksForUpdates = $0 })) {
+                    SettingsControlLabel("Check for updates automatically",
+                                         detail: "Lotion looks for a new version once a day and asks before installing it.")
                 }
             }
         }
