@@ -1,0 +1,20 @@
+# Secrets (Unsplash access key)
+Lotion/Secrets.plist
+
+# macOS
+.DS_Store
+
+# Xcode per-user state
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Build output
+DerivedData/
+build/
+.build/
+.swiftpm/
+*.xcresult
+
+# Python
+__pycache__/
