@@ -10,8 +10,9 @@ every note is a plain Markdown file in a folder you own, styled as you type.
   delete it and you lose nothing you wrote.
 - **A block editor for Markdown.** Headings, lists, checklists, quotes, tables
   and code, with syntax highlighting for 200+ languages.
-- **Diagrams, drawn natively.** Mermaid flowcharts and sequence diagrams render
-  as real diagrams.
+- **Diagrams, drawn natively.** Mermaid flowcharts, sequence, state, class and ER
+  diagrams and XY charts render in the note’s colors, with
+  [BeautifulMermaid](https://github.com/lukilabs/beautiful-mermaid-swift).
 - **Rich embeds.** Links become cards; YouTube, Spotify, Figma, posts, maps,
   PDFs, audio and files embed inline.
 - **Covers and icons** for notes, with Unsplash search.

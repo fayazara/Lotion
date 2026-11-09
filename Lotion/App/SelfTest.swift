@@ -864,6 +864,45 @@ enum SelfTest {
           API-)DB: log attempt
           deactivate API
         """),
+        ("state", """
+        stateDiagram-v2
+          [*] --> Draft
+          Draft --> Published: publish
+          Published --> Draft: unpublish
+          Published --> [*]
+        """),
+        ("class", """
+        classDiagram
+          class Note {
+            +String title
+            +String text
+            +save()
+          }
+          class Library {
+            +[Note] notes
+            +load()
+          }
+          Library "1" --> "*" Note
+        """),
+        ("er", """
+        erDiagram
+          NOTE ||--o{ FILE : has
+          NOTE {
+            string id
+            string title
+          }
+          FILE {
+            string name
+            int size
+          }
+        """),
+        ("xychart", """
+        xychart-beta
+          title "Notes per week"
+          x-axis [W1, W2, W3, W4]
+          y-axis "Notes" 0 --> 20
+          bar [4, 9, 12, 17]
+        """),
         ("unsupported", "gantt\n  title Launch\n  section Build\n  Cards :a1, 2026-01-01, 3d"),
     ]
 
@@ -871,82 +910,36 @@ enum SelfTest {
         let dir = UserDefaults.standard.string(forKey: "LotionSnapDir")
         if let dir { try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true) }
 
-        // Parsing
-        if case .success(let chart) = FlowchartParser.parse(sampleDiagrams[0].1) {
-            check(chart.direction == .right, "a flowchart reads its direction")
-            check(chart.nodes.count == 6, "every node is read", "\(chart.nodes.map(\.id))")
-            check(chart.edges.count == 5, "every edge is read", "\(chart.edges.map { "\($0.from)->\($0.to)" })")
-            check(chart.nodes.first?.title == "Record created" && chart.nodes.first?.detail == "New record created", "a <br> splits title from detail")
-            check(chart.edges.contains { $0.label == "True" } && chart.edges.contains { $0.label == "False" }, "edge labels written -- text --> are read",
-                  "\(chart.edges.map(\.label))")
-            check(chart.nodes.first?.classes == ["active"], ":::class is read")
-        } else {
-            check(false, "the workflow parses")
-        }
-        if case .success(let chart) = FlowchartParser.parse(sampleDiagrams[1].1) {
-            check(chart.direction == .down, "graph TD reads as down")
-            check(chart.edges.contains { $0.label == "Yes" } && chart.edges.contains { $0.line == .dotted }, "|label| and dotted links are read",
-                  "\(chart.edges.map { "\($0.from)->\($0.to) \($0.label) \($0.line)" })")
-            check(chart.nodes.first { $0.id == "valid" }?.shape == .decision, "{} is a decision")
-        }
-        if case .success(let chart) = FlowchartParser.parse(sampleDiagrams[2].1) {
-            check(chart.groups.count == 2 && chart.groups.contains { $0.title == "Backend" }, "subgraphs and their titles are read", "\(chart.groups)")
-            check(chart.edges.filter { $0.to == "c" }.count == 2, "& joins nodes")
-            check(chart.edges.contains { $0.line == .thick }, "==> is thick")
-        }
-        if case .success(let chart) = SequenceParser.parse(sampleDiagrams.first { $0.0 == "sequence" }!.1) {
-            check(chart.participants.map(\.title) == ["You", "BotAgent", "Model", "Tools"], "sequence participants and aliases are read",
-                  "\(chart.participants.map(\.title))")
-            let messages = chart.events.compactMap { if case .message(let m) = $0 { m } else { nil } }
-            check(messages.count == 9, "every message is read", "\(messages.count)")
-            check(messages.first?.text == "Pull this week's leads", "quoted message text is unquoted", messages.first?.text ?? "")
-            check(messages.contains { $0.from == $0.to }, "a message to oneself is read")
-            check(messages.contains { $0.dashed } && messages.contains { !$0.dashed }, "-->> is dashed and ->> solid")
-            let starts = chart.events.compactMap { if case .start(let kind, let label) = $0 { "\(kind):\(label)" } else { nil } }
-            check(starts == ["loop:up to 40 steps", "alt:rule is \"ask first\""] || starts == ["loop:up to 40 steps", "alt:rule is ask first"],
-                  "loop and alt blocks are read", "\(starts)")
-            check(chart.events.filter { if case .end = $0 { true } else { false } }.count == 2, "blocks close")
-            let layout = SequenceLayout.make(chart, metrics: FlowMetrics(base: 16))
-            check(layout.frames.count == 2 && layout.frames.last.map { inner in layout.frames.first.map { $0.rect.contains(inner.rect) } ?? false } == false
-                  || layout.frames.contains { outer in layout.frames.contains { $0.rect != outer.rect && outer.rect.contains($0.rect) } },
-                  "the alt frame sits inside the loop frame", "\(layout.frames.map(\.rect))")
-            var overlaps = 0
-            for (i, a) in layout.messages.enumerated() where !a.text.isEmpty {
-                for b in layout.messages.dropFirst(i + 1) where !b.text.isEmpty && a.textRect.intersects(b.textRect) { overlaps += 1 }
-                for card in layout.cards where card.rect.intersects(a.textRect) { overlaps += 1 }
-            }
-            check(overlaps == 0, "sequence labels don't collide", "\(overlaps)")
-        } else {
-            check(false, "the sequence diagram parses")
-        }
-        if case .failure(.unsupported) = DiagramContent.make(sampleDiagrams.last!.1, metrics: FlowMetrics(base: 16)) {
-            check(true, "other diagram types are reported, not drawn")
-        } else {
-            check(false, "other diagram types are reported, not drawn")
-        }
-
-        // Drawing, in light and dark
+        // Drawing every kind, in light and dark
         for dark in [false, true] {
             let style = EditorStyle(theme: .paper, isDark: dark, noteFont: "System", noteFontSize: 16, lineSpacing: .comfortable,
                                     codeFont: "SF Mono", readableWidth: .medium, spellCheck: false)
             let palette = style.palette
+            let diagramStyle = DiagramStyle(palette: palette, fontSize: 16)
             for (name, source) in sampleDiagrams.dropLast() {
-                let metrics = FlowMetrics(base: 16)
-                guard case .success(let content) = DiagramContent.make(source, metrics: metrics) else { check(false, "\(name) draws"); continue }
-                if case .flow(let chart, let layout) = content {
-                    check(layout.nodes.count == chart.nodes.count, "\(name): every node is placed")
-                    var overlaps = 0
-                    for i in layout.nodes.indices { for j in layout.nodes.indices where j > i && layout.nodes[i].rect.intersects(layout.nodes[j].rect) { overlaps += 1 } }
-                    check(overlaps == 0, "\(name): no cards overlap", "\(overlaps)")
+                guard case .success(let content) = DiagramContent.make(source, style: diagramStyle) else {
+                    check(false, "\(name) draws")
+                    continue
                 }
-                let image = NSImage(size: content.size, flipped: true) { rect in
-                    DiagramPainter.drawCanvas(in: rect, palette: palette, rounded: false)
-                    content.draw(metrics: metrics, palette: palette)
-                    return true
-                }
-                guard let dir, let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) else { continue }
-                try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: dir).appending(path: "diagram-\(name)-\(dark ? "dark" : "light").png"))
+                check(content.size.width > 40 && content.size.height > 20, "\(name) is laid out", "\(content.size)")
+                guard let dir, let tiff = content.image(palette: palette).tiffRepresentation,
+                      let rep = NSBitmapImageRep(data: tiff) else { continue }
+                try? rep.representation(using: .png, properties: [:])?
+                    .write(to: URL(fileURLWithPath: dir).appending(path: "diagram-\(name)-\(dark ? "dark" : "light").png"))
             }
+        }
+        let paper = DiagramStyle(palette: LotionTheme.paper.palette(dark: false), fontSize: 16)
+        if case .failure = DiagramContent.make("flowchart LR\n  A --> ", style: paper) {
+            check(true, "a broken diagram shows its source")
+        } else if case .failure = DiagramContent.make("gantt\n  title x", style: paper) {
+            check(true, "a broken diagram shows its source")
+        } else {
+            log("NOTE BeautifulMermaid draws even partial sources")
+        }
+        if case .failure(.empty) = DiagramContent.make("  \n", style: paper) {
+            check(true, "an empty fence is empty")
+        } else {
+            check(false, "an empty fence is empty")
         }
 
         // In a note

@@ -572,7 +572,7 @@ enum DemoLibrary {
 
     ## Diagrams
 
-    Mermaid, but beautiful. Flowcharts get cards, icons and clean right-angled wires. Sequence diagrams get lifelines, loops and alt blocks.
+    Mermaid, drawn natively in the note’s own colors: flowcharts, sequence, state, class and ER diagrams, and XY charts.
 
     ```mermaid
     flowchart LR

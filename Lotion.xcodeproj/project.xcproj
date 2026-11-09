@@ -14,6 +14,12 @@
     {
       "kind": "local",
       "path": "../shiki-swift",
+    }, {
+      "kind": "remote",
+      "repository": "https://github.com/lukilabs/beautiful-mermaid-swift",
+      "version": {
+        "up-to-next-major-version": "1.0.4",
+      },
     },
   ],
   "files": [
@@ -39,6 +45,10 @@
       ],
       "package-product-members": [
         {
+          "package": "beautiful-mermaid-swift",
+          "product-name": "BeautifulMermaid",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
           "package": "shiki-swift",
           "product-name": "Shiki",
           "build-phase": { "build-phase": "frameworks" },
@@ -53,8 +63,8 @@
         "CURRENT_PROJECT_VERSION": "1",
         "DEVELOPMENT_TEAM": "TB2S44TFQS",
         "ENABLE_APP_SANDBOX": "YES",
-        "ENABLE_OUTGOING_NETWORK_CONNECTIONS": "YES",
         "ENABLE_HARDENED_RUNTIME": "YES",
+        "ENABLE_OUTGOING_NETWORK_CONNECTIONS": "YES",
         "ENABLE_PREVIEWS": "YES",
         "ENABLE_USER_SELECTED_FILES": "readwrite",
         "GENERATE_INFOPLIST_FILE": "YES",
