@@ -55,7 +55,7 @@ const (
 	appDisplayName = "Lotion"
 	githubRepo     = "fayazara/Lotion"
 	gitBranch      = "main"
-	minSystemVer   = "27.0"
+	minSystemVer   = "26.0"
 	dmgVolumeName  = "Lotion"
 	appName        = "Lotion.app"
 	dmgName        = "Lotion.dmg"

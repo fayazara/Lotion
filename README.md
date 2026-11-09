@@ -63,7 +63,7 @@ Lotion updates itself through [Sparkle](https://sparkle-project.org). Use
 
 ## Building
 
-Requires macOS 27 and Xcode 27.
+Lotion runs on macOS 26 or later. Building it requires Xcode 27.
 
 1. Clone [shiki-swift](https://github.com/fayazara/shiki-swift) next to this
    repo — the project uses it as a local package at `../shiki-swift`:

@@ -123,7 +123,7 @@ appcast entry for that build is replaced rather than duplicated.
 
 - Repo auto-detected from the working directory, else `~/Developer/fayazara/mac/Paper` (override with `LOTION_REPO`).
 - GitHub repo: `fayazara/Lotion` · branch: `main` · team: `TB2S44TFQS` · bundle: `com.fayazahmed.Lotion`.
-- DMG volume: `Lotion` · minimum macOS: `27.0`.
+- DMG volume: `Lotion` · minimum macOS: `26.0`.
 - Homebrew tap clone: temporary, or a local clone via `LOTION_TAP_DIR`.
 
 ## Sparkle Configuration
