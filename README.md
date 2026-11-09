@@ -3,6 +3,8 @@
 A quiet, native notes app for the Mac. The name is a play on *local Notion*:
 every note is a plain Markdown file in a folder you own, styled as you type.
 
+https://github.com/user-attachments/assets/1491deae-30f4-4640-a196-278edd8c6d8e
+
 ## Features
 
 - **Just files.** Notes are `.md` files, folders are folders. Covers, icons and
