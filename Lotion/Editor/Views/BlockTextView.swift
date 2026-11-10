@@ -92,7 +92,14 @@ final class BlockTextView: NSTextView {
 
     override func resignFirstResponder() -> Bool {
         let resigned = super.resignFirstResponder()
-        if resigned { editor?.textViewDidBlur(self) }
+        if resigned {
+            // A table cell left behind (by Tab, say) would keep drawing its selection
+            // as a gray inactive highlight, so drop it down to a caret.
+            if cell != nil, selectedRange().length > 0 {
+                setSelectedRange(NSRange(location: selectedRange().location, length: 0))
+            }
+            editor?.textViewDidBlur(self)
+        }
         needsDisplay = true
         return resigned
     }
