@@ -28,6 +28,26 @@
     -->
 
     <item>
+      <title>Version 0.0.3</title>
+      <sparkle:version>3</sparkle:version>
+      <sparkle:shortVersionString>0.0.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <pubDate>Tue, 10 Nov 2026 02:39:43 +0000</pubDate>
+      <description><![CDATA[
+        <h2>What's New in 0.0.3</h2>
+        <ul>
+          <li>Tabbing through table cells no longer leaves gray highlights behind in the cells you've passed</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/fayazara/Lotion/releases/download/v0.0.3/Lotion.dmg"
+        type="application/octet-stream"
+        sparkle:edSignature="2qGP3/NUgA5LQU1iXGQfyNYPqLXbrC9HSQhs22Qig2RyEEjtM8NdDvMDsS7bigFMQ50LHDGjbi9H8z4MGsdqAQ=="
+        length="12194313"
+      />
+    </item>
+
+    <item>
       <title>Version 0.0.2</title>
       <sparkle:version>2</sparkle:version>
       <sparkle:shortVersionString>0.0.2</sparkle:shortVersionString>
