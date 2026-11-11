@@ -28,6 +28,28 @@
     -->
 
     <item>
+      <title>Version 0.0.4</title>
+      <sparkle:version>4</sparkle:version>
+      <sparkle:shortVersionString>0.0.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 11 Nov 2026 07:14:07 +0000</pubDate>
+      <description><![CDATA[
+        <h2>What's New in 0.0.4</h2>
+        <ul>
+          <li>Lotion now has a built-in MCP server, so AI agents like Claude Code and Codex can read, search, write and organize your notes, add attachments, use the scratchpad, change settings, and publish notes to your Lotion Share worker.</li>
+          <li>Set it up in Settings → AI Agents: copy the command for your agent and run it once in a terminal.</li>
+          <li>Pressing Tab in a table now clears the cell selection as it moves to the next cell.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/fayazara/Lotion/releases/download/v0.0.4/Lotion.dmg"
+        type="application/octet-stream"
+        sparkle:edSignature="M+mtRt9+48HA1ENha1Ht15BI0kdFNzEqkhWIy1BJvP8JflDXYWzXsY9Ky+sYMbVBxfhNLLjs3LrOXONDk/1EDA=="
+        length="12476152"
+      />
+    </item>
+
+    <item>
       <title>Version 0.0.3</title>
       <sparkle:version>3</sparkle:version>
       <sparkle:shortVersionString>0.0.3</sparkle:shortVersionString>
