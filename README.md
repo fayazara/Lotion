@@ -49,6 +49,25 @@ the same popover. Settings → Cloud lists everything you've published.
 To update the worker, run the same prompt again. Verify Connection tells you
 when there's a newer version.
 
+## AI agents (MCP)
+
+Lotion has a built-in MCP server, so coding agents like Claude Code and Codex
+can work with your notes: read, search, create, edit, move and delete them,
+organize folders, pin notes, set icons and covers, add attachments, write to
+the scratchpad, change settings, and publish or unpublish notes when Lotion
+Share is connected. Changes show up in the Lotion window as they happen.
+
+Open **Settings → AI Agents** and copy the command for your agent, for example:
+
+```bash
+claude mcp add --scope user lotion -- '/Applications/Lotion.app/Contents/MacOS/Lotion' --mcp
+```
+
+The agent runs Lotion's own binary with `--mcp`. It relays to the running app
+over a Unix socket in Lotion's sandbox container, and opens Lotion in the
+background if it isn't running. Turn off **Allow AI agents** to stop the
+server.
+
 ## Install
 
 Download `Lotion.dmg` from the

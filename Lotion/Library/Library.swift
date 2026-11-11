@@ -68,6 +68,14 @@ final class Note: Identifiable, Hashable {
         if newTitle != title { title = newTitle }
     }
 
+    /// Takes text written outside the editor (by an agent), so an editor
+    /// showing the note loads it as it would a change on disk.
+    func replaceText(_ newText: String) {
+        guard newText != text else { return }
+        setText(newText)
+        diskRevision += 1
+    }
+
     func reload(text newText: String, modified date: Date) {
         savedText = newText
         modified = date
@@ -364,7 +372,7 @@ final class Library {
         UserDefaults.standard.set(Array(pinnedPaths).sorted(), forKey: Self.pinsKey)
     }
 
-    private func relativePath(of url: URL) -> String {
+    func relativePath(of url: URL) -> String {
         let rootPath = root.standardizedFileURL.path + "/"
         let path = url.standardizedFileURL.path
         return path.hasPrefix(rootPath) ? String(path.dropFirst(rootPath.count)) : path

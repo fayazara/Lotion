@@ -12,7 +12,7 @@ import AppKit
 import SwiftUI
 
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case appearance, editor, media, cloud, updates
+    case appearance, editor, media, cloud, agents, updates
 
     var id: String { rawValue }
 
@@ -22,6 +22,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .editor: "Editor"
         case .media: "Media & Links"
         case .cloud: "Cloud"
+        case .agents: "AI Agents"
         case .updates: "Updates"
         }
     }
@@ -32,6 +33,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .editor: "textformat"
         case .media: "photo.fill.on.rectangle.fill"
         case .cloud: "cloud.fill"
+        case .agents: "sparkles"
         case .updates: "arrow.triangle.2.circlepath"
         }
     }
@@ -112,6 +114,7 @@ struct SettingsView: View {
                 case .editor: EditorPane()
                 case .media: MediaPane()
                 case .cloud: CloudPane()
+                case .agents: AgentsPane()
                 case .updates: UpdatesPane()
                 }
             }

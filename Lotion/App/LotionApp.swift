@@ -6,18 +6,29 @@
 import AppKit
 import SwiftUI
 
+/// `Lotion --mcp` is the agent relay and must never start the UI, so the
+/// choice is made before SwiftUI gets the process.
 @main
+enum LotionMain {
+    static func main() {
+        if AgentRelay.isRequested {
+            AgentRelay.run()
+        }
+        LotionApp.main()
+    }
+}
+
 struct LotionApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @State private var state = AppState()
     @AppStorage(Prefs.appearance) private var appearance: AppearanceMode = .system
+
+    private var state: AppState { appDelegate.state }
 
     var body: some Scene {
         // One window: every note lives in one library, edited in one place.
         Window("Lotion", id: "main") {
             ContentView(state: state)
                 .onAppear {
-                    appDelegate.state = state
                     NSApp.appearance = appearance.nsAppearance
                     #if DEBUG
                     SelfTest.runIfRequested(state)
@@ -32,17 +43,23 @@ struct LotionApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    var state: AppState?
+    /// Owned here rather than by the window, so the agent server can reach
+    /// the library from launch.
+    let state = AppState()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         UpdaterManager.shared.start()
+        AgentServer.shared.state = state
+        AgentServer.shared.updateForPreference()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        if let state, let note = state.selectedNote, note.isBlank {
+        // Removes the socket, so a relay sees Lotion is gone and reopens it.
+        AgentServer.shared.stop()
+        if let note = state.selectedNote, note.isBlank {
             state.library.discardIfBlank(note)
         }
-        state?.library.saveAll()
+        state.library.saveAll()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
