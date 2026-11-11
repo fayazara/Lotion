@@ -309,9 +309,10 @@ private struct SearchResultRow: View {
 
 // MARK: - Glyph Tint
 
-/// Colors sidebar glyphs with the accent of the theme picked in Settings, on
-/// the side (light or dark) in use. Themes that leave the accent to the system
-/// keep the sidebar's quiet grey rather than going system blue.
+/// Colors sidebar glyphs with the heading color of the theme picked in Settings,
+/// on the side (light or dark) in use, so they match the note. Themes with
+/// plain headings fall back to the accent; themes that leave the accent to the
+/// system keep the sidebar's quiet grey rather than going system blue.
 private struct SidebarGlyphTint: ViewModifier {
     @AppStorage(Prefs.theme) private var theme: LotionTheme = .paper
     @Environment(\.colorScheme) private var colorScheme
@@ -319,7 +320,9 @@ private struct SidebarGlyphTint: ViewModifier {
     func body(content: Content) -> some View {
         let isDark = colorScheme == .dark
         let spec = isDark ? theme.dark ?? theme.light : theme.light ?? theme.dark
-        if spec?.accent != nil {
+        if let spec, let heading = spec.heading, heading != spec.text {
+            content.foregroundStyle(Color(nsColor: theme.palette(dark: isDark).heading))
+        } else if spec?.accent != nil {
             content.foregroundStyle(Color(nsColor: theme.palette(dark: isDark).accent))
         } else {
             content.foregroundStyle(.secondary)
