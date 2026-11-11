@@ -28,6 +28,26 @@
     -->
 
     <item>
+      <title>Version 0.0.5</title>
+      <sparkle:version>5</sparkle:version>
+      <sparkle:shortVersionString>0.0.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 11 Nov 2026 08:29:22 +0000</pubDate>
+      <description><![CDATA[
+        <h2>What's New in 0.0.5</h2>
+        <ul>
+          <li>Sidebar icons now match the theme's heading color, so they line up with the headings in your notes</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/fayazara/Lotion/releases/download/v0.0.5/Lotion.dmg"
+        type="application/octet-stream"
+        sparkle:edSignature="OtuBb9QYKr8A3A6UspmbfTX8rkRIptH/cc7mKrrjo2XxVwVCVskryYISQO+xrwnJdCefMUcVH+8HY0SOn8w+CQ=="
+        length="12476917"
+      />
+    </item>
+
+    <item>
       <title>Version 0.0.4</title>
       <sparkle:version>4</sparkle:version>
       <sparkle:shortVersionString>0.0.4</sparkle:shortVersionString>
