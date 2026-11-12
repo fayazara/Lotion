@@ -72,6 +72,21 @@ final class EditorController {
         run(on: note) { $0.newEntry() }
     }
 
+    /// Shows a scratchpad entry, by the time on its break.
+    func revealEntry(_ id: String, in note: Note) {
+        if let source {
+            DispatchQueue.main.async {
+                let range = (source.string as NSString).range(of: BlockMarkdown.entryPrefix + id)
+                guard range.location != NSNotFound else { return }
+                source.window?.makeFirstResponder(source)
+                source.setSelectedRange(NSRange(location: NSMaxRange(range), length: 0))
+                source.scrollRangeToVisible(range)
+            }
+            return
+        }
+        run(on: note) { $0.revealEntry(id: id) }
+    }
+
     func revealMatch(_ query: String, in note: Note) {
         if let source {
             DispatchQueue.main.async {

@@ -39,6 +39,15 @@ final class AppState {
         editor.openNote = { [weak self] id in self?.selection = id }
     }
 
+    /// Whether the main window is on screen; closing it leaves Lotion running.
+    var isMainWindowOpen = false
+    /// Opens the main window again, set once it has first appeared.
+    @ObservationIgnored var openMainWindow: (() -> Void)?
+
+    func showMainWindow() {
+        if !isMainWindowOpen { openMainWindow?() }
+    }
+
     var selectedNote: Note? { library.note(id: selection) }
     var isSearching: Bool { !searchText.trimmingCharacters(in: .whitespaces).isEmpty }
 

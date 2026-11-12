@@ -23,6 +23,7 @@ struct ContentView: View {
     @AppStorage(Prefs.tableWidth) private var tableWidth: TableWidth = .fit
     @Environment(\.colorScheme) private var colorScheme
     @FocusState private var isSearchFocused: Bool
+    @Environment(\.openWindow) private var openWindow
 
     private var editorStyle: EditorStyle {
         EditorStyle(
@@ -54,6 +55,11 @@ struct ContentView: View {
         .searchable(text: $state.searchText, placement: .sidebar, prompt: "Search")
         .searchFocused($isSearchFocused)
         .onChange(of: state.searchFocusRequest) { isSearchFocused = true }
+        .onAppear {
+            state.isMainWindowOpen = true
+            state.openMainWindow = { [openWindow] in openWindow(id: "main") }
+        }
+        .onDisappear { state.isMainWindowOpen = false }
         .inspector(isPresented: $inspectorVisible) {
             // Keep the inspector's ideal size out of the split view's
             // constraint pass; its width belongs to the split view.

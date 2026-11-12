@@ -126,6 +126,11 @@ enum SelfTest {
             log(failures == 0 ? "DONE all passed" : "DONE \(failures) failed")
             return
         }
+        if UserDefaults.standard.string(forKey: "LotionSelfTestOnly") == "quicknote" {
+            await quickNote(state)
+            log(failures == 0 ? "DONE all passed" : "DONE \(failures) failed")
+            return
+        }
         if UserDefaults.standard.string(forKey: "LotionSelfTestOnly") == "embeds" {
             await embeds(state)
             log(failures == 0 ? "DONE all passed" : "DONE \(failures) failed")
@@ -1755,6 +1760,166 @@ enum SelfTest {
             await wait(0.8)
             check(state.editor.editor?.isScratchpad == false, "leaving the scratchpad leaves its mode too")
         }
+    }
+
+    // MARK: Quick note
+
+    private static func quickNote(_ state: AppState) async {
+        // Splicing one entry in and out of a page, as plain text.
+        let page = [
+            "<!-- entry 2026-11-01T09:00:00Z -->", "", "First thought", "",
+            "<!-- entry 2026-11-02T09:00:00Z -->", "", "```", "<!-- entry 2026-11-09T09:00:00Z -->", "```", "",
+            "<!-- entry 2026-11-03T09:00:00Z -->", "", "- [ ] Third", "",
+        ].joined(separator: "\n")
+        let listed = ScratchpadEntries.entries(in: page)
+        check(listed.map(\.id) == ["2026-11-01T09:00:00Z", "2026-11-02T09:00:00Z", "2026-11-03T09:00:00Z"],
+              "entries are found by their breaks, not by a break inside code", "\(listed.map(\.id))")
+        check(listed.first?.title == "First thought" && listed.last?.title == "Third", "an entry's title is its first line", "\(listed.map(\.title))")
+        if let second = ScratchpadEntries.markdown(of: "2026-11-02T09:00:00Z", in: page) {
+            check(ScratchpadEntries.replacing("2026-11-02T09:00:00Z", in: page, with: second) == page,
+                  "putting an entry back unchanged leaves the page as it was", ScratchpadEntries.replacing("2026-11-02T09:00:00Z", in: page, with: second) ?? "nil")
+        } else {
+            check(false, "an entry can be taken out of the page")
+        }
+        let edited = ScratchpadEntries.replacing("2026-11-01T09:00:00Z", in: page, with: "<!-- entry 2026-11-01T09:00:00Z -->\n\nFirst thought, revised\n") ?? ""
+        check(edited.contains("First thought, revised") && edited.contains("- [ ] Third") && edited.contains("```\n<!-- entry 2026-11-09"),
+              "editing one entry leaves the others alone", edited)
+        let removed = ScratchpadEntries.removing("2026-11-03T09:00:00Z", in: page) ?? ""
+        check(!removed.contains("Third") && removed.contains("First thought"), "an entry can be removed", removed)
+        let (appended, newID) = ScratchpadEntries.appendingEntry(to: page, at: try! Date("2026-11-03T09:00:00Z", strategy: .iso8601))
+        check(newID == "2026-11-03T09:00:01Z", "a new entry never shares its time with another", newID)
+        check(ScratchpadEntries.entries(in: appended).last?.id == newID, "a new entry goes at the end")
+
+        // The pane itself, beside the scratchpad in the main window.
+        guard let pad = state.library.scratchpad else { check(false, "the library has a scratchpad"); return }
+        state.openScratchpad()
+        await wait(0.8)
+        let quick = QuickNoteController.shared
+        quick.show()
+        await wait(0.5)
+        guard let paneEditor = quick.debugEditor, let panel = quick.debugPanel else { check(false, "the quick note pane opens"); return }
+        check(panel.isVisible && panel.level == .floating, "the pane floats over other windows", "visible \(panel.isVisible) level \(panel.level.rawValue) keep \(quick.model.keepOnTop)")
+        check(panel.collectionBehavior.contains(.canJoinAllSpaces), "the pane shows on every desktop")
+        check(paneEditor.blocks.first?.kind == .entry && paneEditor.blocks.filter { $0.kind == .entry }.count == 1,
+              "the pane shows one entry", "\(kinds(paneEditor))")
+
+        quick.newEntry()
+        await wait(0.2)
+        let entryCount = pad.entryCount
+        type(paneEditor, "Buy oat milk")
+        await wait(0.6)
+        check(pad.text.contains("Buy oat milk"), "typing in the pane writes to the scratchpad", pad.text)
+        check(panel.title == "Buy oat milk", "the pane's title is the entry's first line", panel.title)
+        quick.newEntry()
+        await wait(0.1)
+        check(pad.entryCount == entryCount + 1, "the pane's + starts an entry at the end of the scratchpad", "\(pad.entryCount) vs \(entryCount)")
+        quick.newEntry()
+        await wait(0.1)
+        check(pad.entryCount == entryCount + 1, "an empty entry is reused by the pane too")
+        type(paneEditor, "Call Sam back")
+        await wait(0.6)
+        let paneID = quick.debugEntryID ?? ""
+        if let main = state.editor.editor {
+            check(main.markdown().contains("Call Sam back"), "the main window shows what the pane wrote", main.markdown())
+            let mainEntries = main.blocks.filter { $0.kind == .entry }.map(\.info)
+            check(mainEntries.last == paneID, "the main window has the pane's entry last", "\(mainEntries) vs \(paneID)")
+        }
+
+        // Edited in the main window: the pane follows.
+        if let current = ScratchpadEntries.markdown(of: paneID, in: pad.text) {
+            let changed = current.replacingOccurrences(of: "Call Sam back", with: "Call Sam back tomorrow")
+            state.library.update(pad, text: ScratchpadEntries.replacing(paneID, in: pad.text, with: changed) ?? pad.text)
+            await wait(0.3)
+            check(paneEditor.markdown().contains("Call Sam back tomorrow"), "an edit made elsewhere shows in the pane", paneEditor.markdown())
+        }
+        // Another entry edited elsewhere leaves the pane's caret alone.
+        let before = paneEditor.markdown()
+        if let first = ScratchpadEntries.entries(in: pad.text).first, first.id != paneID,
+           let markdown = ScratchpadEntries.markdown(of: first.id, in: pad.text) {
+            state.library.update(pad, text: ScratchpadEntries.replacing(first.id, in: pad.text, with: markdown + "\nAdded elsewhere\n") ?? pad.text)
+            await wait(0.3)
+            check(paneEditor.markdown() == before, "edits to other entries don't touch the pane")
+        }
+
+        let clipboard = NSPasteboard.general.string(forType: .string)
+        quick.copyEntry()
+        defer {
+            NSPasteboard.general.clearContents()
+            if let clipboard { NSPasteboard.general.setString(clipboard, forType: .string) }
+        }
+        check(NSPasteboard.general.string(forType: .string) == "Call Sam back tomorrow", "Copy Entry copies its Markdown",
+              NSPasteboard.general.string(forType: .string) ?? "nil")
+
+        let count = pad.entryCount
+        quick.deleteEntry()
+        await wait(0.2)
+        check(pad.entryCount == count - 1 && !pad.text.contains("Call Sam back"), "Delete Entry removes it", pad.text)
+        paneEditor.noteUndoManager?.undo()
+        await wait(0.2)
+        check(pad.entryCount == count && pad.text.contains("Call Sam back tomorrow"), "undo brings a deleted entry back", pad.text)
+        check(quick.debugEntryID == paneID, "and shows it again")
+
+        let notes = state.library.notes.count
+        quick.moveToNewNote()
+        await wait(0.4)
+        check(state.library.notes.count == notes + 1, "Move to New Note makes a note")
+        if let note = state.library.notes.first(where: { $0.title == "Call Sam back tomorrow" }) {
+            check(note.text.hasPrefix("# Call Sam back tomorrow"), "its first line becomes the title", note.text)
+            check(state.selection == note.id, "and it opens in the main window")
+        } else {
+            check(false, "the moved note is titled by its first line", state.library.notes.map(\.title).joined(separator: ", "))
+        }
+        check(!pad.text.contains("Call Sam back"), "and it leaves the scratchpad", pad.text)
+        check(!panel.isVisible || panel.alphaValue < 1, "opening the main window puts the pane away")
+        await wait(0.3)
+        check(!panel.isVisible, "the pane is hidden")
+        quick.show()
+        await wait(0.3)
+        if let dir = UserDefaults.standard.string(forKey: "LotionSnapDir") {
+            let shot = Process()
+            shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+            shot.arguments = ["-x", "-o", "-l", "\(panel.windowNumber)", "\(dir)/40-quick-note.png"]
+            try? shot.run()
+            shot.waitUntilExit()
+        }
+        // The corner button opens the slash menu out of itself.
+        func capture(_ name: String) {
+            guard let dir = UserDefaults.standard.string(forKey: "LotionSnapDir") else { return }
+            let shot = Process()
+            shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+            shot.arguments = ["-x", "-o", "-l", "\(panel.windowNumber)", "\(dir)/\(name).png"]
+            try? shot.run()
+            shot.waitUntilExit()
+        }
+        let typedBefore = paneEditor.markdown()
+        quick.toggleSlashMenu()
+        try? await Task.sleep(for: .milliseconds(90))
+        let menuBounds = paneEditor.slashMenu.bounds
+        let surface = paneEditor.slashMenu.surfaceFrame
+        check(abs(surface.maxX - menuBounds.maxX) < 0.5 && abs(surface.maxY - menuBounds.maxY) < 0.5,
+              "the menu grows out of the button's corner", "\(surface) in \(menuBounds)")
+        check(surface.width < menuBounds.width && surface.height < menuBounds.height, "partway open, it is still growing", "\(surface)")
+        await wait(0.5)
+        check(paneEditor.slashMenu.surfaceFrame == menuBounds, "open, the surface is the whole menu")
+        check(paneEditor.slash != nil && !paneEditor.slashMenu.isHidden, "the / button opens the slash menu")
+        let menu = paneEditor.slashMenu.frame
+        check(paneEditor.visibleRect.contains(menu), "the slash menu fits in the pane", "\(menu) in \(paneEditor.visibleRect)")
+        if let dir = UserDefaults.standard.string(forKey: "LotionSnapDir") {
+            let shot = Process()
+            shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+            shot.arguments = ["-x", "-o", "-l", "\(panel.windowNumber)", "\(dir)/41-quick-note-slash.png"]
+            try? shot.run()
+            shot.waitUntilExit()
+        }
+        quick.toggleSlashMenu()
+        try? await Task.sleep(for: .milliseconds(60))
+        capture("41b-morph-closing")
+        check(paneEditor.slash == nil, "pressing it again closes the menu")
+        await wait(0.5)
+        check(paneEditor.slashMenu.isHidden && !quick.model.isSlashMenuOpen, "the menu shrinks back into the button, which returns")
+        check(paneEditor.markdown() == typedBefore, "closing with the button takes back the / it typed", paneEditor.markdown())
+        state.library.saveAll()
+        quick.hide()
     }
 
     // MARK: Performance

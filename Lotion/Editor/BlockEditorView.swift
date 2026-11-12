@@ -40,7 +40,15 @@ final class BlockEditorView: NSView {
     private(set) var columnX: CGFloat = 0
     private(set) var columnWidth: CGFloat = 600
     private(set) var contentBottom: CGFloat = 0
-    var topInset: CGFloat { cover.topInset }
+    var topInset: CGFloat { compactInsets?.top ?? cover.topInset }
+    /// Tighter margins for a small window (the quick note pane): the space
+    /// above the first block and at each side of the column.
+    var compactInsets: (top: CGFloat, side: CGFloat)? { didSet { relayout() } }
+    /// Where the slash menu opens from, in this view, instead of under the
+    /// caret: the quick note pane's corner button.
+    var slashMenuCorner: (() -> NSRect?)?
+    /// Called as the slash menu opens (true) and closes (false).
+    var onSlashMenuChange: ((Bool) -> Void)?
 
     /// Blocks selected as whole blocks, by index.
     var blockSelection: ClosedRange<Int>? { didSet { if blockSelection != oldValue { needsDisplay = true } } }
@@ -324,7 +332,7 @@ final class BlockEditorView: NSView {
 
     func relayout(from start: Int = 0) {
         let width = bounds.width
-        let margin = max(64, round(width * 0.06))
+        let margin = compactInsets?.side ?? max(64, round(width * 0.06))
         let newWidth = min(readableWidth, max(240, width - margin * 2))
         let newX = round((width - newWidth) / 2)
         let moved = newWidth != columnWidth || newX != columnX

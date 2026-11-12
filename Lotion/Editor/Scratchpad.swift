@@ -68,6 +68,15 @@ extension BlockEditorView {
         if let index = index(of: marker.id) { revealEntry(at: index) }
     }
 
+    /// Puts the caret at the end of the entry whose break says `id`, with
+    /// the entry scrolled into view.
+    func revealEntry(id: String) {
+        guard let start = blocks.firstIndex(where: { $0.kind == .entry && $0.info == id }) else { return }
+        let end = entryEnd(containing: start)
+        if let last = blocks[(start + 1)..<end].last(where: { $0.kind.isEditable }) { focus(last.id, .end) }
+        revealEntry(at: start)
+    }
+
     /// Scrolls so an entry's break sits near the top, with room to write under it.
     private func revealEntry(at index: Int) {
         guard views.indices.contains(index) else { return }

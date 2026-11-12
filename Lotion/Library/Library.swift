@@ -503,6 +503,17 @@ final class Library {
 
     func update(_ note: Note, text: String) {
         note.setText(text)
+        scheduleSave(note)
+    }
+
+    /// Text another editor of the same note wrote (the quick note pane): an
+    /// editor showing the note reloads it, and it is saved as typing is.
+    func updateFromOtherEditor(_ note: Note, text: String) {
+        note.replaceText(text)
+        scheduleSave(note)
+    }
+
+    private func scheduleSave(_ note: Note) {
         saveTasks[note.id]?.cancel()
         saveTasks[note.id] = Task { [weak self, weak note] in
             try? await Task.sleep(for: .milliseconds(600))

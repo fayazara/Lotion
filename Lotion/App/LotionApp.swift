@@ -51,18 +51,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         UpdaterManager.shared.start()
         AgentServer.shared.state = state
         AgentServer.shared.updateForPreference()
+        QuickNoteController.shared.state = state
+        GlobalHotKey.quickNote.onPress = { QuickNoteController.shared.toggle() }
+        GlobalHotKey.quickNote.register(KeyShortcut.quickNote)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         // Removes the socket, so a relay sees Lotion is gone and reopens it.
         AgentServer.shared.stop()
+        QuickNoteController.shared.prepareToQuit()
         if let note = state.selectedNote, note.isBlank {
             state.library.discardIfBlank(note)
         }
         state.library.saveAll()
     }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    /// Lotion keeps running with the main window closed, so the quick note
+    /// shortcut still works; ⌘Q quits.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
+    /// Clicking the Dock icon brings the main window back, even while the
+    /// quick note pane is the only window showing.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        state.showMainWindow()
+        return true
+    }
 }
 
 struct LotionCommands: Commands {
@@ -79,17 +92,35 @@ struct LotionCommands: Commands {
                 .keyboardShortcut(",")
         }
         CommandGroup(replacing: .newItem) {
-            Button("New Note") { state.newNote() }
+            Button("New Note") {
+                // In the quick note pane, ⌘N starts an entry there instead.
+                if QuickNoteController.shared.isKey {
+                    QuickNoteController.shared.newEntry()
+                } else {
+                    state.showMainWindow()
+                    state.newNote()
+                }
+            }
                 .keyboardShortcut("n")
             Button("New Folder") { state.newFolder() }
                 .keyboardShortcut("n", modifiers: [.command, .shift])
             Divider()
-            Button("Open Scratchpad") { state.openScratchpad() }
+            Button("Open Scratchpad") {
+                state.showMainWindow()
+                state.openScratchpad()
+            }
                 .keyboardShortcut("0")
             // Only while the scratchpad shows, so ⌘↩ stays free elsewhere.
-            Button("New Scratchpad Entry") { state.newScratchpadEntry() }
+            Button("New Scratchpad Entry") {
+                if QuickNoteController.shared.isKey {
+                    QuickNoteController.shared.newEntry()
+                } else {
+                    state.newScratchpadEntry()
+                }
+            }
                 .keyboardShortcut(.return, modifiers: .command)
                 .disabled(!state.isScratchpadOpen)
+            Button("Quick Note") { QuickNoteController.shared.toggle() }
         }
         CommandGroup(after: .saveItem) {
             Button("Show in Finder") {

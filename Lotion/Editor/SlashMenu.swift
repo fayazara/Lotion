@@ -93,7 +93,12 @@ final class SlashMenuView: NSView {
     /// `scrollSelectionVisible` themselves so the pointer never drags the list.
     var selected = 0 { didSet { if selected != oldValue { list.needsDisplay = true } } }
     private let glass = NSGlassEffectView()
+    /// The glass's content: clips the list to the surface while it morphs.
+    private let clipper = MorphClipView()
     private let list = SlashListView()
+    /// The "/" the closed surface shows, as the button it grows out of.
+    private let glyph = MorphGlyphView()
+    private var morph = Morph()
     /// How far the list is scrolled, in points.
     private(set) var offset: CGFloat = 0
 
@@ -101,15 +106,26 @@ final class SlashMenuView: NSView {
     static let width: CGFloat = 290
     static let maxRows = 8
     static let inset: CGFloat = 6
+    /// Fewer rows when the window is short (the quick note pane).
+    var rowLimit = SlashMenuView.maxRows
 
     override init(frame: NSRect) {
         super.init(frame: frame)
         // A Liquid Glass panel, like the system's own menus.
         glass.style = .regular
-        glass.cornerRadius = 14
+        glass.cornerRadius = Self.openRadius
         addSubview(glass)
         list.owner = self
-        glass.contentView = list
+        clipper.wantsLayer = true
+        clipper.layer?.masksToBounds = true
+        clipper.addSubview(list)
+        clipper.addSubview(glyph)
+        glass.contentView = clipper
+        list.wantsLayer = true
+        list.layerUsesCoreImageFilters = true
+        glyph.wantsLayer = true
+        glyph.layerUsesCoreImageFilters = true
+        glyph.isHidden = true
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -124,16 +140,15 @@ final class SlashMenuView: NSView {
             offset = 0
         }
         selected = min(selected, max(0, items.count - 1))
-        let rows = max(1, min(Self.maxRows, items.count))
+        let rows = max(1, min(rowLimit, items.count))
         let height = CGFloat(rows) * Self.rowHeight + Self.inset * 2
         setFrameSize(NSSize(width: Self.width, height: height))
-        glass.frame = bounds
-        list.frame = bounds
+        layoutMorph()
         offset = min(offset, maxOffset)
         list.needsDisplay = true
     }
 
-    var visibleRows: Int { max(1, min(Self.maxRows, items.count)) }
+    var visibleRows: Int { max(1, min(rowLimit, items.count)) }
 
     var viewportHeight: CGFloat { CGFloat(visibleRows) * Self.rowHeight }
     var maxOffset: CGFloat { max(0, CGFloat(items.count) * Self.rowHeight - viewportHeight) }
@@ -172,6 +187,221 @@ final class SlashMenuView: NSView {
     func choose(_ index: Int) {
         guard items.indices.contains(index) else { return }
         editor?.applySlash(items[index])
+    }
+
+    // MARK: Morph
+
+    /// Opening from a corner button: the surface grows out of the button's
+    /// circle, its corners easing from round to the menu's, while the list
+    /// slides and fades in and the button's "/" slides and fades away.
+    /// Closing runs it back. The button sits at the bottom-right corner.
+    static let openRadius: CGFloat = 14
+    var closedSize: CGFloat = 36
+    private(set) var isClosing = false
+    /// The morphing surface, in the menu's coordinates.
+    var surfaceFrame: NSRect { glass.frame }
+    private var link: CADisplayLink?
+    private var completion: (() -> Void)?
+
+    private struct Morph {
+        /// 0 is the closed circle, 1 the open menu (overshooting a little).
+        var surface: CGFloat = 1
+        /// The list's opacity and focus; the glyph's, inverted.
+        var fade: CGFloat = 1
+        /// How far the list and glyph have slid.
+        var motion: CGFloat = 1
+        var from = (surface: CGFloat(1), fade: CGFloat(1), motion: CGFloat(1))
+        var opening = true
+        var start: CFTimeInterval = 0
+    }
+
+    private static let openEase = UnitBezier(0.34, 1.25, 0.64, 1)
+    private static let closeEase = UnitBezier(0.22, 1, 0.36, 1)
+    private static let openDuration = 0.35
+    private static let closeDuration = 0.25
+    private static let fadeDuration = 0.2
+    private static let slide: CGFloat = 40
+    private static let shrink: CGFloat = 0.97
+    private static let blur: CGFloat = 2
+
+    /// `fromClosed`: the menu was hidden, so it starts as the button.
+    func morphOpen(fromClosed: Bool) {
+        isClosing = false
+        completion = nil
+        if fromClosed {
+            morph.surface = 0
+            morph.fade = 0
+            morph.motion = 0
+        }
+        run(opening: true)
+    }
+
+    func morphClose(_ done: @escaping () -> Void) {
+        guard !isClosing else { completion = done; return }
+        isClosing = true
+        completion = done
+        run(opening: false)
+    }
+
+    /// Shows the menu fully open, with no morph (the main editor's menu).
+    func settleOpen() {
+        link?.invalidate()
+        link = nil
+        isClosing = false
+        morph.surface = 1
+        morph.fade = 1
+        morph.motion = 1
+        layoutMorph()
+    }
+
+    private func run(opening: Bool) {
+        morph.from = (morph.surface, morph.fade, morph.motion)
+        morph.opening = opening
+        morph.start = CACurrentMediaTime()
+        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            finish()
+            return
+        }
+        if link == nil {
+            let link = displayLink(target: self, selector: #selector(tick))
+            link.add(to: .main, forMode: .common)
+            self.link = link
+        }
+        layoutMorph()
+    }
+
+    @objc private func tick() {
+        let elapsed = CACurrentMediaTime() - morph.start
+        let target: CGFloat = morph.opening ? 1 : 0
+        func step(_ from: CGFloat, _ duration: Double, _ ease: UnitBezier) -> CGFloat {
+            let t = min(1, elapsed / duration)
+            return from + (target - from) * CGFloat(ease.solve(t))
+        }
+        morph.surface = step(morph.from.surface, morph.opening ? Self.openDuration : Self.closeDuration,
+                             morph.opening ? Self.openEase : Self.closeEase)
+        morph.fade = step(morph.from.fade, Self.fadeDuration, Self.closeEase)
+        morph.motion = step(morph.from.motion, Self.openDuration, Self.closeEase)
+        layoutMorph()
+        let longest = morph.opening ? Self.openDuration : max(Self.closeDuration, Self.openDuration)
+        if elapsed >= longest { finish() }
+    }
+
+    private func finish() {
+        link?.invalidate()
+        link = nil
+        let target: CGFloat = morph.opening ? 1 : 0
+        morph.surface = target
+        morph.fade = target
+        morph.motion = target
+        layoutMorph()
+        isClosing = false
+        let done = completion
+        completion = nil
+        done?()
+    }
+
+    /// Puts the surface, list and glyph where the morph has them now.
+    private func layoutMorph() {
+        let open = bounds
+        let size = closedSize
+        let closed = NSRect(x: open.maxX - size, y: open.maxY - size, width: size, height: size)
+        let p = morph.surface
+        // Grown from the bottom-right corner; the open ease may overshoot.
+        let width = max(size * 0.5, closed.width + (open.width - closed.width) * p)
+        let height = max(size * 0.5, closed.height + (open.height - closed.height) * p)
+        let surface = NSRect(x: open.maxX - width, y: open.maxY - height, width: width, height: height)
+        let radius = max(0, size / 2 + (Self.openRadius - size / 2) * min(1, max(0, p)))
+        glass.frame = surface
+        glass.cornerRadius = radius
+        clipper.frame = glass.bounds
+        clipper.layer?.cornerRadius = radius
+
+        // The list stays where the open menu has it; the surface reveals it.
+        list.frame = NSRect(x: -surface.minX, y: -surface.minY, width: open.width, height: open.height)
+        let fade = morph.fade
+        let motion = morph.motion
+        list.alphaValue = fade
+        transform(list, x: Self.slide * (1 - motion), scale: Self.shrink + (1 - Self.shrink) * motion, blur: Self.blur * (1 - fade))
+
+        // The "/" rides the surface's bottom-right corner, sliding off left.
+        glyph.isHidden = fade >= 1 && motion >= 1
+        glyph.frame = NSRect(x: surface.width - size, y: surface.height - size, width: size, height: size)
+        glyph.alphaValue = 1 - fade
+        transform(glyph, x: -Self.slide * motion, scale: 1, blur: Self.blur * fade)
+    }
+
+    private func transform(_ view: NSView, x: CGFloat, scale: CGFloat, blur: CGFloat) {
+        guard let layer = view.layer else { return }
+        let bounds = view.bounds
+        // Scaled about the view's centre (a view's layer anchors at its corner).
+        var t = CGAffineTransform(translationX: x + bounds.width * (1 - scale) / 2, y: bounds.height * (1 - scale) / 2)
+        t = t.scaledBy(x: scale, y: scale)
+        layer.setAffineTransform(t)
+        if blur > 0.01 {
+            let filter = CIFilter(name: "CIGaussianBlur")
+            filter?.setValue(blur, forKey: kCIInputRadiusKey)
+            layer.filters = filter.map { [$0] }
+        } else if layer.filters != nil {
+            layer.filters = nil
+        }
+    }
+}
+
+/// The glass's content view, flipped like the menu so frames line up.
+private final class MorphClipView: NSView {
+    override var isFlipped: Bool { true }
+}
+
+/// The corner button's "/", drawn as SwiftUI draws it there.
+private final class MorphGlyphView: NSView {
+    override var isFlipped: Bool { true }
+
+    override func draw(_ dirtyRect: NSRect) {
+        let base = NSFont.systemFont(ofSize: 17, weight: .medium)
+        let font = base.fontDescriptor.withDesign(.rounded).flatMap { NSFont(descriptor: $0, size: 17) } ?? base
+        let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.secondaryLabelColor]
+        let size = ("/" as NSString).size(withAttributes: attributes)
+        ("/" as NSString).draw(at: NSPoint(x: bounds.midX - size.width / 2, y: bounds.midY - size.height / 2), withAttributes: attributes)
+    }
+}
+
+/// A CSS-style cubic-bézier timing curve.
+struct UnitBezier {
+    private let cx, bx, ax, cy, by, ay: Double
+
+    init(_ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double) {
+        cx = 3 * x1
+        bx = 3 * (x2 - x1) - cx
+        ax = 1 - cx - bx
+        cy = 3 * y1
+        by = 3 * (y2 - y1) - cy
+        ay = 1 - cy - by
+    }
+
+    private func x(_ t: Double) -> Double { ((ax * t + bx) * t + cx) * t }
+    private func y(_ t: Double) -> Double { ((ay * t + by) * t + cy) * t }
+    private func dx(_ t: Double) -> Double { (3 * ax * t + 2 * bx) * t + cx }
+
+    /// The curve's value at time `progress` (0…1).
+    func solve(_ progress: Double) -> Double {
+        if progress <= 0 { return 0 }
+        if progress >= 1 { return 1 }
+        var t = progress
+        for _ in 0..<8 {
+            let error = x(t) - progress
+            if abs(error) < 1e-6 { return y(t) }
+            let slope = dx(t)
+            if abs(slope) < 1e-6 { break }
+            t -= error / slope
+        }
+        // Bisection when Newton's method stalls.
+        var low = 0.0, high = 1.0
+        t = progress
+        while high - low > 1e-6 {
+            if x(t) < progress { low = t } else { high = t }
+            t = (low + high) / 2
+        }
+        return y(t)
     }
 }
 
@@ -289,11 +519,29 @@ extension BlockEditorView {
         let items = SlashItem.matching(query)
         if items.isEmpty, query.hasSuffix(" ") || (query as NSString).length > 12 { closeSlash(); return }
         state.query = query
+        let wasHidden = slashMenu.isHidden
+        let isOpening = wasHidden || slashMenu.isClosing
         slash = state
+        if let corner = slashMenuCorner?() {
+            // Pinned to a corner: as many rows as fit above it.
+            let room = corner.maxY - visibleRect.minY - 12 - SlashMenuView.inset * 2
+            slashMenu.rowLimit = max(3, min(SlashMenuView.maxRows, Int(room / SlashMenuView.rowHeight)))
+        }
         slashMenu.show(items)
         slashMenu.isHidden = false
         hideHandle()
         positionSlashMenu()
+        if isOpening {
+            if let corner = slashMenuCorner?() {
+                // It morphs out of the corner button, which steps aside for it.
+                slashMenu.closedSize = min(corner.width, corner.height)
+                onSlashMenuChange?(true)
+                slashMenu.morphOpen(fromClosed: wasHidden)
+            } else {
+                slashMenu.settleOpen()
+                onSlashMenuChange?(true)
+            }
+        }
     }
 
     func positionSlashMenu() {
@@ -303,6 +551,11 @@ extension BlockEditorView {
         let rect = layoutManager.boundingRect(forGlyphRange: glyphs, in: container)
         let anchor = convert(rect.offsetBy(dx: textView.textContainerOrigin.x, dy: textView.textContainerOrigin.y), from: textView)
         let size = slashMenu.frame.size
+        if let corner = slashMenuCorner?() {
+            // Its bottom-right corner sits on the corner button's.
+            slashMenu.setFrameOrigin(NSPoint(x: corner.maxX - size.width, y: corner.maxY - size.height))
+            return
+        }
         var y = anchor.maxY + 6
         if y + size.height > visibleRect.maxY - 8, anchor.minY - size.height - 6 > visibleRect.minY { y = anchor.minY - size.height - 6 }
         let x = min(max(8, anchor.minX - 8), bounds.width - size.width - 8)
@@ -312,7 +565,17 @@ extension BlockEditorView {
     func closeSlash() {
         guard slash != nil || !slashMenu.isHidden else { return }
         slash = nil
+        if slashMenuCorner?() != nil, !slashMenu.isHidden {
+            // Back into the corner button, which returns once it's there.
+            slashMenu.morphClose { [weak self] in
+                guard let self, self.slash == nil else { return }
+                self.slashMenu.isHidden = true
+                self.onSlashMenuChange?(false)
+            }
+            return
+        }
         slashMenu.isHidden = true
+        onSlashMenuChange?(false)
     }
 
     func handleSlashCommand(_ selector: Selector) -> Bool {
