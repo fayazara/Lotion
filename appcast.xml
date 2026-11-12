@@ -28,6 +28,29 @@
     -->
 
     <item>
+      <title>Version 0.0.6</title>
+      <sparkle:version>6</sparkle:version>
+      <sparkle:shortVersionString>0.0.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 12 Nov 2026 04:12:54 +0000</pubDate>
+      <description><![CDATA[
+        <h2>What's New in 0.0.6</h2>
+        <ul>
+          <li>Quick Note: press ⌃⌥N from any app to jot something down in a small floating window. Each note is an entry in your scratchpad.</li>
+          <li>Browse and search older entries, start a new one, copy or delete an entry, or move it into a note of its own.</li>
+          <li>A round / button in the corner opens the command menu. Change the shortcut in Settings → Quick Note.</li>
+          <li>Lotion now keeps running when you close its window, so the shortcut always works. Quit with ⌘Q, or have it open at login.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/fayazara/Lotion/releases/download/v0.0.6/Lotion.dmg"
+        type="application/octet-stream"
+        sparkle:edSignature="r32H78AYceSV4Co/YMOCD1bqQDmovU+vkQ0k1uZ7RT+UzBHUzoyS4fQdLrS4axif3HeKXADWJQfz64bOgQ0iBQ=="
+        length="12631410"
+      />
+    </item>
+
+    <item>
       <title>Version 0.0.5</title>
       <sparkle:version>5</sparkle:version>
       <sparkle:shortVersionString>0.0.5</sparkle:shortVersionString>
