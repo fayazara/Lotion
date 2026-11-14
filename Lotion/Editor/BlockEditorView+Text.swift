@@ -171,6 +171,7 @@ extension BlockEditorView: NSTextViewDelegate {
 
     func textViewDidChangeSelection(_ notification: Notification) {
         guard let textView = notification.object as? BlockTextView else { return }
+        if !isMovingVertically { verticalGoalX = nil }
         if !isChangingText {
             endTyping()
             // The caret has left a link being written: now it can become one.
@@ -215,10 +216,10 @@ extension BlockEditorView: NSTextViewDelegate {
             guard selection.length == 0, selection.location == length else { return false }
             return handleDeleteAtEnd(at: index)
         case #selector(moveUp(_:)):
-            guard textView.caretIsOnFirstLine() else { return false }
+            guard textView.caretIsOnFirstLine() else { return moveWithinBlock(textView, up: true) }
             return moveVertically(from: textView, at: index, up: true)
         case #selector(moveDown(_:)):
-            guard textView.caretIsOnLastLine() else { return false }
+            guard textView.caretIsOnLastLine() else { return moveWithinBlock(textView, up: false) }
             return moveVertically(from: textView, at: index, up: false)
         case #selector(moveLeft(_:)):
             guard selection.length == 0, selection.location == 0 else { return false }
@@ -386,7 +387,7 @@ extension BlockEditorView: NSTextViewDelegate {
     }
 
     private func moveVertically(from textView: BlockTextView, at index: Int, up: Bool) -> Bool {
-        let x = convert(textView.caretRect, from: textView).minX
+        let x = verticalGoalX ?? convert(textView.caretRect, from: textView).minX
         var target = index + (up ? -1 : 1)
         while blocks.indices.contains(target), !isNavigable(blocks[target]) { target += up ? -1 : 1 }
         guard blocks.indices.contains(target) else {
@@ -395,7 +396,28 @@ extension BlockEditorView: NSTextViewDelegate {
             textView.setSelectedRange(NSRange(location: up ? 0 : length, length: 0))
             return true
         }
+        isMovingVertically = true
         focus(blocks[target].id, .line(first: !up, x: x))
+        isMovingVertically = false
+        verticalGoalX = x
+        return true
+    }
+
+    /// Up or Down inside a block, aiming for the column the caret started
+    /// from rather than wherever the last short line left it.
+    private func moveWithinBlock(_ textView: BlockTextView, up: Bool) -> Bool {
+        let goal = verticalGoalX ?? convert(textView.caretRect, from: textView).minX
+        isMovingVertically = true
+        if up { textView.moveUp(nil) } else { textView.moveDown(nil) }
+        if textView.selectedRange().length == 0 {
+            let caret = textView.caretRect
+            let x = textView.convert(NSPoint(x: goal, y: 0), from: self).x
+            let location = textView.caretIndex(onLineAt: caret.midY, x: x)
+            textView.setSelectedRange(NSRange(location: location, length: 0))
+        }
+        isMovingVertically = false
+        verticalGoalX = goal
+        scrollCaretVisible(textView)
         return true
     }
 

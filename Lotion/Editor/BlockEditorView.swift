@@ -62,6 +62,10 @@ final class BlockEditorView: NSView {
     var isConvertingLinks = false
     /// While set, putting the caret back doesn't scroll to it.
     var keepsScroll = false
+    /// Where Up and Down aim, in this view's x, so the caret keeps its column
+    /// through short lines and blocks. Any other move forgets it.
+    var verticalGoalX: CGFloat?
+    var isMovingVertically = false
 
     // Slash menu
     var slash: SlashState?
@@ -367,7 +371,8 @@ final class BlockEditorView: NSView {
         updateHandlePosition()
         if slash != nil { positionSlashMenu() }
         updateScrollSpyEntries()
-        needsDisplay = true
+        // The editor itself only draws selections; don't repaint for nothing.
+        if blockSelection != nil || crossBlockDrag != nil { needsDisplay = true }
     }
 
     /// Builds the text views of blocks on or near the screen.
@@ -472,8 +477,39 @@ final class BlockEditorView: NSView {
     }
 
     func scrollCaretVisible(_ textView: BlockTextView) {
-        let caret = convert(textView.caretRect, from: textView)
-        scrollToVisible(caret.insetBy(dx: 0, dy: -48))
+        reveal(convert(textView.caretRect, from: textView), margin: 56)
+    }
+
+    /// Scrolls just enough to show `rect` with `margin` around it, measured
+    /// from what can actually be seen: not from under the toolbar that
+    /// floats over the top of the note. Nothing moves while it's in view.
+    func reveal(_ rect: NSRect, margin: CGFloat) {
+        guard rect.height > 0 else { return }
+        guard let scrollView = enclosingScrollView else {
+            scrollToVisible(rect.insetBy(dx: 0, dy: -margin))
+            return
+        }
+        let clip = scrollView.contentView
+        let bounds = clip.bounds
+        let insets = scrollView.contentInsets
+        let top = bounds.minY + insets.top
+        let bottom = bounds.maxY - insets.bottom
+        // A rect taller than the view is shown from its top.
+        let pad = min(margin, max(0, (bottom - top - rect.height) / 2))
+        var y = bounds.minY
+        if rect.minY - pad < top || rect.height > bottom - top {
+            y = rect.minY - pad - insets.top
+        } else if rect.maxY + pad > bottom {
+            y = rect.maxY + pad - bounds.height + insets.bottom
+        } else {
+            return
+        }
+        let lowest = -insets.top
+        let highest = max(lowest, frame.height - bounds.height + insets.bottom)
+        y = min(max(lowest, y), highest)
+        guard abs(y - bounds.minY) >= 0.5 else { return }
+        clip.scroll(to: NSPoint(x: bounds.minX, y: y))
+        scrollView.reflectScrolledClipView(clip)
     }
 
     func textViewDidFocus(_ textView: BlockTextView) {

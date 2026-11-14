@@ -165,7 +165,7 @@ extension BlockEditorView {
         blockSelection = indices
         selectionAnchor = anchor
         selectionHead = head
-        if views.indices.contains(head) { scrollToVisible(views[head].frame.insetBy(dx: 0, dy: -24)) }
+        if views.indices.contains(head) { reveal(views[head].frame, margin: 24) }
     }
 
     override func becomeFirstResponder() -> Bool { true }

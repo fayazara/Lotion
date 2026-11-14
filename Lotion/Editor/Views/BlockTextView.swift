@@ -311,8 +311,24 @@ final class BlockTextView: NSTextView {
         layoutManager.ensureLayout(for: textContainer)
         let used = layoutManager.usedRect(for: textContainer)
         let y = first ? 1 : max(1, used.maxY - 2)
-        let index = characterIndex(near: NSPoint(x: x, y: y + textContainerOrigin.y))
+        let index = caretIndex(onLineAt: y + textContainerOrigin.y, x: x)
         setSelectedRange(NSRange(location: index, length: 0))
+    }
+
+    /// The caret position nearest `x` on the visual line at `y` (both in this
+    /// view). Past the end of a line that wraps, the caret stays on that line
+    /// instead of slipping to the start of the next one.
+    func caretIndex(onLineAt y: CGFloat, x: CGFloat) -> Int {
+        var index = characterIndex(near: NSPoint(x: x, y: y))
+        guard let layoutManager, let textContainer, layoutManager.numberOfGlyphs > 0 else { return index }
+        let length = textStorage?.length ?? 0
+        let local = NSPoint(x: 0, y: y - textContainerOrigin.y)
+        let glyph = layoutManager.glyphIndex(for: local, in: textContainer)
+        var lineGlyphs = NSRange()
+        layoutManager.lineFragmentRect(forGlyphAt: glyph, effectiveRange: &lineGlyphs)
+        let line = layoutManager.characterRange(forGlyphRange: lineGlyphs, actualGlyphRange: nil)
+        if index == NSMaxRange(line), NSMaxRange(line) < length, line.length > 0 { index -= 1 }
+        return index
     }
 }
 
