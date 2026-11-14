@@ -759,8 +759,80 @@ enum SelfTest {
 
         await polish(state)
         guard let editor = state.editor.editor else { return }
+        await editorKeyboard(state, editor)
         await performance(state, editor)
         log(failures == 0 ? "DONE all passed" : "DONE \(failures) failed")
+    }
+
+    // MARK: Keyboard and scrolling
+
+    private static func editorKeyboard(_ state: AppState, _ editor: BlockEditorView) async {
+        state.newNote()
+        await wait(0.8)
+        let line = "The quick brown fox jumps over the lazy dog"
+        var text = "# Keys\n\n\(line)\n\nab\n\n\(line)\n\n- [ ] a task\n\n"
+        for index in 0..<60 { text += "Filler paragraph \(index)\n\n" }
+        text += "The end"
+        editor.load(BlockMarkdown.parse(text))
+        editor.layoutSubtreeIfNeeded()
+
+        // Up and Down keep their column through a short block.
+        editor.focus(editor.blocks[1].id, .offset(20))
+        key(editor, #selector(NSResponder.moveDown(_:)))
+        check(focused(editor)?.blockID == editor.blocks[2].id && focused(editor)?.selectedRange().location == 2,
+              "down into a short block goes to its end")
+        key(editor, #selector(NSResponder.moveDown(_:)))
+        check(focused(editor)?.blockID == editor.blocks[3].id && focused(editor)?.selectedRange().location == 20,
+              "down again returns to the column it started from", "\(focused(editor)?.selectedRange().location ?? -1)")
+        key(editor, #selector(NSResponder.moveUp(_:)))
+        key(editor, #selector(NSResponder.moveUp(_:)))
+        check(focused(editor)?.blockID == editor.blocks[1].id && focused(editor)?.selectedRange().location == 20,
+              "and so does up", "\(focused(editor)?.selectedRange().location ?? -1)")
+
+        // ⌘↩ checks off a to-do; Space does for selected ones.
+        editor.focus(editor.blocks[4].id, .end)
+        if let view = focused(editor), let window = editor.window,
+           let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command, timestamp: 0,
+                                        windowNumber: window.windowNumber, context: nil, characters: "\r",
+                                        charactersIgnoringModifiers: "\r", isARepeat: false, keyCode: 36) {
+            view.keyDown(with: event)
+        }
+        check(editor.blocks[4].checked, "⌘↩ checks off a to-do")
+        check(focused(editor)?.blockID == editor.blocks[4].id, "the caret stays in the to-do")
+        key(editor, #selector(NSResponder.cancelOperation(_:)))
+        check(editor.blockSelection == 4...4, "escape selects the block")
+        editor.insertText(" ")
+        check(!editor.blocks[4].checked, "space unchecks a selected to-do")
+
+        // Escape again clears the selection; Down picks it back up.
+        editor.doCommand(by: #selector(NSResponder.cancelOperation(_:)))
+        check(editor.blockSelection == nil, "escape clears the selection")
+        editor.doCommand(by: #selector(NSResponder.moveDown(_:)))
+        check(editor.blockSelection != nil, "down after escape selects a block again")
+        editor.doCommand(by: #selector(NSResponder.insertNewline(_:)))
+        check(focused(editor) != nil, "return goes back to editing")
+
+        // The caret is never left under the toolbar.
+        if let scroll = editor.enclosingScrollView {
+            center(editor, NSRect(x: 0, y: editor.contentBottom - 40, width: 10, height: 40))
+            editor.focus(editor.blocks[1].id, .start)
+            if let view = focused(editor) {
+                let caret = editor.convert(view.caretRect, from: view)
+                let top = scroll.contentView.bounds.minY + scroll.contentInsets.top
+                check(caret.minY >= top, "a caret scrolled to stays clear of the toolbar", "caret \(caret.minY), top \(top)")
+            }
+            // And a caret already in view doesn't move the page.
+            let y = scroll.contentView.bounds.minY
+            editor.focus(editor.blocks[3].id, .end)
+            check(scroll.contentView.bounds.minY == y, "a caret in view doesn't scroll")
+        }
+
+        if let view = focused(editor) {
+            check(view.accessibilityRoleDescription() == "text", "VoiceOver hears a paragraph as text",
+                  view.accessibilityRoleDescription() ?? "nil")
+        }
+        editor.focus(editor.blocks[0].id, .end)
+        check(focused(editor)?.accessibilityRoleDescription() == "title", "and the title as the title")
     }
 
     // MARK: Inspector, scroll spy and zoom
