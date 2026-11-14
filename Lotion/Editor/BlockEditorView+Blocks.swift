@@ -166,6 +166,27 @@ extension BlockEditorView {
         selectionAnchor = anchor
         selectionHead = head
         if views.indices.contains(head) { reveal(views[head].frame, margin: 24) }
+        announceSelection(indices)
+    }
+
+    /// Tells VoiceOver what's selected, as it would hear a list selection.
+    private func announceSelection(_ indices: ClosedRange<Int>) {
+        guard NSWorkspace.shared.isVoiceOverEnabled else { return }
+        if indices.count == 1, blocks.indices.contains(indices.lowerBound) {
+            let block = blocks[indices.lowerBound]
+            let text = block.plainText.trimmingCharacters(in: .whitespacesAndNewlines)
+            announce("\(accessibilityKind(of: block, at: indices.lowerBound)) selected" + (text.isEmpty ? "" : ", " + String(text.prefix(80))))
+        } else {
+            announce("\(indices.count) blocks selected")
+        }
+    }
+
+    func announce(_ message: String) {
+        guard NSWorkspace.shared.isVoiceOverEnabled else { return }
+        NSAccessibility.post(element: window ?? self, notification: .announcementRequested, userInfo: [
+            .announcement: message,
+            .priority: NSAccessibilityPriorityLevel.high.rawValue,
+        ])
     }
 
     override func becomeFirstResponder() -> Bool { true }
@@ -176,17 +197,96 @@ extension BlockEditorView {
     }
 
     override func keyDown(with event: NSEvent) {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting([.numericPad, .function])
+        if flags == .command, event.keyCode == 36 || event.keyCode == 76, let selection = blockSelection {
+            toggleChecked(in: selection)
+            return
+        }
         if blockSelection != nil {
+            interpretKeyEvents([event])
+            return
+        }
+        // With nothing selected (after Escape), Up, Down and Return pick up
+        // where the selection was; everything else, Tab included, passes on.
+        if flags.isEmpty, [36, 76, 125, 126].contains(event.keyCode) {
             interpretKeyEvents([event])
         } else {
             super.keyDown(with: event)
         }
     }
 
-    override func insertText(_ insertString: Any) {}
+    /// Space checks off the selected to-dos, as it would a checkbox.
+    override func insertText(_ insertString: Any) {
+        let string = (insertString as? String) ?? (insertString as? NSAttributedString)?.string
+        if string == " ", let selection = blockSelection { toggleChecked(in: selection) }
+    }
+
+    /// Checks (or, when all are done, unchecks) the to-dos among `range`.
+    func toggleChecked(in range: ClosedRange<Int>) {
+        let todos = range.filter { blocks.indices.contains($0) && blocks[$0].kind == .todo }
+        guard !todos.isEmpty else { return }
+        let check = !todos.allSatisfy { blocks[$0].checked }
+        mutate(check ? "Check" : "Uncheck", focus: currentFocus(), keepScroll: true) { blocks in
+            for index in todos {
+                blocks[index].checked = check
+                blocks[index].touch()
+            }
+        }
+        announce(check ? "done" : "not done")
+    }
+
+    /// ⌘↩ in a block's text: checks off a to-do, or opens the link at the caret.
+    func commandReturn(in textView: BlockTextView) -> Bool {
+        guard textView.cell == nil, let index = index(of: textView.blockID) else { return false }
+        if blocks[index].kind == .todo {
+            toggleChecked(blocks[index].id)
+            announce(blocks[index].checked ? "done" : "not done")
+            return true
+        }
+        guard let storage = textView.textStorage, storage.length > 0 else { return false }
+        let caret = textView.selectedRange().location
+        for probe in [caret, caret - 1] where probe >= 0 && probe < storage.length {
+            if let url = storage.attribute(.lotionLink, at: probe, effectiveRange: nil) as? String {
+                open(link: url)
+                return true
+            }
+        }
+        return false
+    }
+
+    /// The block menu, from the keyboard: for the selected blocks, or the
+    /// block with the caret and what is nested under it.
+    @objc func showBlockActions(_ sender: Any?) { showBlockActions() }
+
+    func showBlockActions() {
+        guard let index = blockSelection?.lowerBound ?? focusedIndex, views.indices.contains(index) else { return }
+        let range = blockSelection ?? subtree(at: index)
+        hideHandle()
+        selectBlocks(indices: range, anchor: range.lowerBound, head: range.upperBound)
+        let view = views[index]
+        var x = columnX
+        if let text = view as? TextBlockView { x += CGFloat(text.block.indent) * theme.indentWidth }
+        showBlockMenu(for: index, at: NSPoint(x: x, y: view.frame.minY + view.firstLineMidY + 12))
+    }
 
     override func doCommand(by selector: Selector) {
-        guard let selection = blockSelection else { return }
+        guard let selection = blockSelection else {
+            // After Escape cleared the selection: arrows and Return come back
+            // to the block that was selected, instead of doing nothing.
+            switch selector {
+            case #selector(moveUp(_:)), #selector(moveDown(_:)), #selector(insertNewline(_:)):
+                guard !blocks.isEmpty else { return }
+                let head = min(max(0, selectionHead), blocks.count - 1)
+                if selector == #selector(insertNewline(_:)), blocks[head].kind.isEditable || blocks[head].kind == .table {
+                    focus(blocks[head].id, .end)
+                } else {
+                    selectBlocks(indices: head...head, anchor: head, head: head)
+                }
+            default:
+                break
+            }
+            return
+        }
         let last = blocks.count - 1
         switch selector {
         case #selector(moveUp(_:)):
@@ -470,6 +570,14 @@ extension BlockEditorView {
         focusedTextView?.insertText("/", replacementRange: NSRange(location: 0, length: 0))
     }
 
+    /// The handle pressed without the mouse (VoiceOver): the block menu.
+    func handlePress() {
+        guard let index = handleIndex, blocks.indices.contains(index) else { return }
+        let range = subtree(at: index)
+        selectBlocks(indices: range, anchor: range.lowerBound, head: range.upperBound)
+        showBlockMenu(for: index, at: NSPoint(x: handle.frame.minX, y: handle.frame.maxY + 2))
+    }
+
     /// Dragging the handle moves the block; clicking it opens the block menu.
     func handleDrag(_ event: NSEvent) {
         guard let index = handleIndex, blocks.indices.contains(index) else { return }
@@ -516,7 +624,7 @@ extension BlockEditorView {
             return
         }
         selectBlocks(indices: range, anchor: range.lowerBound, head: range.upperBound)
-        showBlockMenu(for: index)
+        showBlockMenu(for: index, at: NSPoint(x: handle.frame.minX, y: handle.frame.maxY + 2))
     }
 
     private func dropIndex(atY y: CGFloat) -> Int {
@@ -532,7 +640,7 @@ extension BlockEditorView {
 
     // MARK: Block menu
 
-    func showBlockMenu(for index: Int) {
+    func showBlockMenu(for index: Int, at location: NSPoint) {
         let menu = NSMenu()
         let block = blocks[index]
         let canTurn = block.kind.isText || block.kind == .code || block.kind == .raw
@@ -554,12 +662,53 @@ extension BlockEditorView {
         menu.addItem(.separator())
         menu.addItem(ClosureMenuItem(title: "Move Up") { [weak self] in self?.moveFocusedBlocks(by: -1) })
         menu.addItem(ClosureMenuItem(title: "Move Down") { [weak self] in self?.moveFocusedBlocks(by: 1) })
+        if block.kind == .todo {
+            menu.addItem(.separator())
+            menu.addItem(ClosureMenuItem(title: block.checked ? "Mark as Not Done" : "Mark as Done") { [weak self] in
+                guard let self, let selection = self.blockSelection else { return }
+                self.toggleChecked(in: selection)
+            })
+        }
         menu.addItem(.separator())
         menu.addItem(ClosureMenuItem(title: "Delete") { [weak self] in
             guard let self, let selection = self.blockSelection else { return }
             self.deleteBlocks(selection.map { self.blocks[$0].id })
         })
-        menu.popUp(positioning: nil, at: NSPoint(x: handle.frame.minX, y: handle.frame.maxY + 2), in: self)
+        menu.popUp(positioning: nil, at: location, in: self)
+    }
+
+    // MARK: Accessibility
+
+    /// What a block is, the way VoiceOver names a control's role.
+    func accessibilityKind(of block: Block, at index: Int) -> String {
+        switch block.kind {
+        case .heading(let level): return isTitle(block.id) ? "title" : "heading level \(level)"
+        case .bullet: return block.indent > 0 ? "bulleted list item, level \(block.indent + 1)" : "bulleted list item"
+        case .numbered:
+            let number = (views.indices.contains(index) ? (views[index] as? TextBlockView)?.number : nil) ?? 1
+            return "numbered list item \(number)" + (block.indent > 0 ? ", level \(block.indent + 1)" : "")
+        case .todo: return block.checked ? "to-do, done" : "to-do, not done"
+        case .quote: return block.alert.map { TextBlockView.alertStyle($0).title.lowercased() + " callout" } ?? "quote"
+        case .code:
+            if block.isDiagram { return "diagram" }
+            return block.language.isEmpty ? "code block" : "\(CodeLanguages.title(for: block.language)) code block"
+        case .raw: return "Markdown"
+        case .html: return "HTML"
+        case .divider: return "divider"
+        case .table: return "table"
+        case .image: return block.imageAlt.isEmpty ? "media" : "media, \(block.imageAlt)"
+        case .embed: return "embed"
+        case .entry: return "entry break"
+        case .paragraph: return "text"
+        }
+    }
+
+    func accessibilityDescription(for textView: BlockTextView) -> String? {
+        guard let index = index(of: textView.blockID) else { return nil }
+        if let cell = textView.cell {
+            return "table cell, row \(cell.row + 1), column \(cell.column + 1)" + (cell.row == 0 ? ", header" : "")
+        }
+        return accessibilityKind(of: blocks[index], at: index)
     }
 }
 
@@ -579,8 +728,9 @@ final class BlockHandleView: NSView {
         plus.target = self
         plus.action = #selector(add)
         plus.toolTip = "Add a block below"
-        grip.toolTip = "Drag to move, click for options"
+        grip.toolTip = "Drag to move, click for options (⌘/)"
         grip.onMouseDown = { [weak self] event in self?.editor?.handleDrag(event) }
+        grip.onPress = { [weak self] in self?.editor?.handlePress() }
         addSubview(plus)
         addSubview(grip)
     }
@@ -601,6 +751,15 @@ final class BlockHandleView: NSView {
 
 private final class GripView: NSView {
     var onMouseDown: ((NSEvent) -> Void)?
+    var onPress: (() -> Void)?
+
+    override func isAccessibilityElement() -> Bool { true }
+    override func accessibilityRole() -> NSAccessibility.Role? { .button }
+    override func accessibilityLabel() -> String? { "Block options" }
+    override func accessibilityPerformPress() -> Bool {
+        onPress?()
+        return true
+    }
     private var hovered = false { didSet { needsDisplay = true } }
     private var tracking: NSTrackingArea?
 

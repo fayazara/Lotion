@@ -172,6 +172,7 @@ struct LotionCommands: Commands {
             FormatButton("Move Block Up", #selector(BlockTextView.moveBlockUp(_:)), key: .upArrow, modifiers: [.command, .shift])
             FormatButton("Move Block Down", #selector(BlockTextView.moveBlockDown(_:)), key: .downArrow, modifiers: [.command, .shift])
             FormatButton("Duplicate Block", #selector(BlockTextView.duplicateBlock(_:)), key: "d")
+            FormatButton("Block Actions…", #selector(BlockTextView.showBlockActions(_:)), key: "/")
         }
         CommandGroup(before: .sidebar) {
             Button(editorMode == .markdown ? "Edit as Blocks" : "Edit as Markdown") {

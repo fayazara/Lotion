@@ -330,6 +330,28 @@ final class BlockTextView: NSTextView {
         if index == NSMaxRange(line), NSMaxRange(line) < length, line.length > 0 { index -= 1 }
         return index
     }
+
+    // MARK: Keys
+
+    override func keyDown(with event: NSEvent) {
+        // ⌘↩ checks off a to-do, or opens the link under the caret. (In the
+        // scratchpad the menu takes it first, for a new entry.)
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting([.numericPad, .function])
+        if flags == .command, event.keyCode == 36 || event.keyCode == 76, editor?.commandReturn(in: self) == true { return }
+        super.keyDown(with: event)
+    }
+
+    @objc func showBlockActions(_ sender: Any?) { editor?.showBlockActions() }
+
+    // MARK: Accessibility
+
+    override func accessibilityRoleDescription() -> String? {
+        editor?.accessibilityDescription(for: self) ?? super.accessibilityRoleDescription()
+    }
+
+    override func accessibilityPlaceholderValue() -> String? {
+        textStorage?.length == 0 ? placeholder : nil
+    }
 }
 
 /// Draws inline code with rounded grounds instead of TextKit's square ones,

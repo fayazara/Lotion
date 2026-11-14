@@ -97,6 +97,8 @@ final class BlockEditorView: NSView {
         slashMenu.isHidden = true
         addSubview(slashMenu)
         registerForMediaDrops()
+        setAccessibilityRole(.group)
+        setAccessibilityLabel("Note")
         NotificationCenter.default.addObserver(self, selector: #selector(faviconsDidLoad), name: Favicons.didLoad, object: nil)
     }
 
