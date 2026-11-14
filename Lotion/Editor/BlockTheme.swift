@@ -246,9 +246,10 @@ final class BlockTheme {
     /// Space above a block, given the one before it.
     func spacing(before block: Block, after previous: Block?, isAfterTitle: Bool = false) -> CGFloat {
         guard let previous else { return 0 }
-        // A scratchpad entry gets room above its break, and starts close under it.
-        if block.kind == .entry { return round(em * 1.4) }
-        if previous.kind == .entry { return round(em * 0.4) }
+        // A scratchpad entry's break sits in equal, generous room above and
+        // below, so entries read as separate thoughts.
+        if block.kind == .entry { return round(em * 2.8) }
+        if previous.kind == .entry { return round(em * 2.8) }
         if isAfterTitle { return round(em * 0.9) }
         if let level = block.kind.headingLevel {
             return round(em * (level == 1 ? 1.9 : level == 2 ? 1.5 : 1.15))
