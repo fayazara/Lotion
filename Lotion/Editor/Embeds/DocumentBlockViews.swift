@@ -33,7 +33,7 @@ private enum DocumentStyle {
     }
 
     static func symbol(_ name: String, size: CGFloat, color: NSColor, weight: NSFont.Weight = .regular) -> NSImage? {
-        NSImage(systemSymbolName: name, accessibilityDescription: nil)?
+        NSImage(icon: name, accessibilityDescription: nil)?
             .withSymbolConfiguration(.init(pointSize: size, weight: weight))?.tinted(color)
     }
 
@@ -437,7 +437,7 @@ final class PDFBlockView: HoverBlockView {
     required init(block: Block, theme: BlockTheme, editor: BlockEditorView) {
         super.init(block: block, theme: theme, editor: editor)
         for (button, symbol, action) in [(previous, "chevron.left", #selector(showPrevious)), (next, "chevron.right", #selector(showNext))] {
-            button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+            button.image = NSImage(icon: symbol, accessibilityDescription: nil)
             button.bezelStyle = .glass
             button.controlSize = .small
             button.imagePosition = .imageOnly

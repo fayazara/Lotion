@@ -29,7 +29,7 @@ final class CoverHeader: NSObject {
     private lazy var repositionButton = button("Reposition", #selector(toggleReposition))
     private lazy var creditButton = button("", #selector(openCredit))
     private lazy var addButton: NSButton = {
-        let button = NSButton(title: "Add Cover", image: NSImage(systemSymbolName: "photo", accessibilityDescription: nil)!,
+        let button = NSButton(title: "Add Cover", image: NSImage(icon: "photo", accessibilityDescription: nil)!,
                               target: self, action: #selector(add))
         button.isBordered = false
         button.controlSize = .small

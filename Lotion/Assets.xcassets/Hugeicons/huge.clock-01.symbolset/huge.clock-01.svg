@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="3300" height="2200">
+ <!--glyph: "", point size: 100.0, template writer version: "101". Icon from Hugeicons (MIT), https://hugeicons.com -->
+ <g id="Notes">
+  <rect height="2200" id="artboard" style="fill:white;opacity:1" width="3300" x="0" y="0"/>
+ </g>
+ <g id="Guides">
+  <g id="H-reference" style="fill:#27AAE1;stroke:none;" transform="matrix(1 0 0 1 339 696)"></g>
+  <line id="Baseline-S" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="696" y2="696"/>
+  <line id="Capline-S" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="625.541" y2="625.541"/>
+  <g id="H-reference" style="fill:#27AAE1;stroke:none;" transform="matrix(1 0 0 1 339 1126)"></g>
+  <line id="Baseline-M" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1126" y2="1126"/>
+  <line id="Capline-M" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1055.54" y2="1055.54"/>
+  <g id="H-reference" style="fill:#27AAE1;stroke:none;" transform="matrix(1 0 0 1 339 1556)"></g>
+  <line id="Baseline-L" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1556" y2="1556"/>
+  <line id="Capline-L" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1485.54" y2="1485.54"/>
+  <line id="left-margin-Regular-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1401.84" x2="1401.84" y1="600.79" y2="720.12"/>
+  <line id="right-margin-Regular-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1488.283" x2="1488.283" y1="600.79" y2="720.12"/>
+  <line id="left-margin-Regular-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1401.84" x2="1401.84" y1="1030.79" y2="1150.12"/>
+  <line id="right-margin-Regular-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1512.24" x2="1512.24" y1="1030.79" y2="1150.12"/>
+  <line id="left-margin-Regular-L" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1401.84" x2="1401.84" y1="1460.79" y2="1580.12"/>
+  <line id="right-margin-Regular-L" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1544.256" x2="1544.256" y1="1460.79" y2="1580.12"/>
+ </g>
+ <g id="Symbols">
+  <g id="Regular-S" transform="matrix(1 0 0 1 1401.84 696)">
+   <path d="M82.391 -35.23C82.391 -13.597 64.854 3.94 43.222 3.94C21.589 3.94 4.052 -13.597 4.052 -35.23C4.052 -56.862 21.589 -74.399 43.222 -74.399C64.854 -74.399 82.391 -56.862 82.391 -35.23ZM10.355 -35.23C10.355 -17.078 25.07 -2.363 43.222 -2.363C61.373 -2.363 76.088 -17.078 76.088 -35.23C76.088 -53.381 61.373 -68.096 43.222 -68.096C25.07 -68.096 10.355 -53.381 10.355 -35.23ZM46.373 -49.637L46.373 -36.535L52.654 -30.254C53.884 -29.024 53.884 -27.028 52.654 -25.797C51.423 -24.567 49.427 -24.567 48.197 -25.797L40.993 -33.001C40.402 -33.592 40.07 -34.394 40.07 -35.23L40.07 -49.637C40.07 -51.377 41.481 -52.788 43.222 -52.788C44.962 -52.788 46.373 -51.377 46.373 -49.637Z"/>
+  </g>
+  <g id="Regular-M" transform="matrix(1 0 0 1 1401.84 1126)">
+   <path d="M105.225 -35.229C105.225 -7.601 82.828 14.796 55.2 14.795C27.572 14.796 5.175 -7.601 5.175 -35.229C5.175 -62.858 27.572 -85.254 55.2 -85.254C82.828 -85.254 105.225 -62.858 105.225 -35.229ZM13.225 -35.229C13.225 -12.047 32.018 6.746 55.2 6.745C78.382 6.746 97.175 -12.047 97.175 -35.229C97.175 -58.412 78.382 -77.204 55.2 -77.204C32.018 -77.204 13.225 -58.412 13.225 -35.229ZM59.225 -53.629L59.225 -36.897L67.246 -28.876C68.818 -27.304 68.818 -24.755 67.246 -23.183C65.674 -21.612 63.126 -21.612 61.554 -23.183L52.354 -32.383C51.599 -33.138 51.175 -34.162 51.175 -35.229L51.175 -53.629C51.175 -55.852 52.977 -57.654 55.2 -57.654C57.423 -57.654 59.225 -55.852 59.225 -53.629Z"/>
+  </g>
+  <g id="Regular-L" transform="matrix(1 0 0 1 1401.84 1556)">
+   <path d="M135.74 -35.23C135.74 0.411 106.848 29.303 71.208 29.303C35.568 29.303 6.676 0.411 6.676 -35.23C6.676 -70.87 35.568 -99.762 71.208 -99.762C106.848 -99.762 135.74 -70.87 135.74 -35.23ZM17.06 -35.23C17.06 -5.325 41.303 18.918 71.208 18.918C101.113 18.918 125.356 -5.325 125.356 -35.23C125.356 -65.134 101.113 -89.377 71.208 -89.377C41.303 -89.377 17.06 -65.134 17.06 -35.23ZM76.4 -58.966L76.4 -37.38L86.747 -27.033C88.775 -25.005 88.775 -21.718 86.747 -19.69C84.72 -17.662 81.432 -17.662 79.405 -19.69L67.537 -31.558C66.563 -32.532 66.016 -33.852 66.016 -35.23L66.016 -58.966C66.016 -61.833 68.34 -64.158 71.208 -64.158C74.076 -64.158 76.4 -61.833 76.4 -58.966Z"/>
+  </g>
+ </g>
+</svg>

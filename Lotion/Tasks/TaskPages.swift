@@ -26,7 +26,7 @@ private struct TaskPage<Content: View>: View {
                         .foregroundStyle(colors.heading)
                         .accessibilityAddTraits(.isHeader)
                     HStack(spacing: 6) {
-                        Image(systemName: "checkmark.circle")
+                        Image(icon: "checkmark.circle")
                         Text(count == 1 ? "1 task" : "\(count) tasks")
                         if let detail {
                             Text("·")

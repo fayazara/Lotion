@@ -731,7 +731,7 @@ final class BlockHandleView: NSView {
 
     override init(frame: NSRect) {
         super.init(frame: frame)
-        plus.image = NSImage(systemSymbolName: "plus", accessibilityDescription: "Add Block")
+        plus.image = NSImage(icon: "plus", accessibilityDescription: "Add Block")
         plus.isBordered = false
         plus.bezelStyle = .shadowlessSquare
         plus.imageScaling = .scaleProportionallyDown

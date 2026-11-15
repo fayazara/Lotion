@@ -76,7 +76,7 @@ final class TasksBlockView: HoverBlockView {
     }
 
     private func symbol(_ name: String, size: CGFloat, color: NSColor, weight: NSFont.Weight = .regular) -> NSImage? {
-        NSImage(systemSymbolName: name, accessibilityDescription: nil)?
+        NSImage(icon: name, accessibilityDescription: nil)?
             .withSymbolConfiguration(.init(pointSize: size, weight: weight))?.tinted(color)
     }
 

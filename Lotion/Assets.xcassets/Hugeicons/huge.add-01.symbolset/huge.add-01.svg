@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="3300" height="2200">
+ <!--glyph: "", point size: 100.0, template writer version: "101". Icon from Hugeicons (MIT), https://hugeicons.com -->
+ <g id="Notes">
+  <rect height="2200" id="artboard" style="fill:white;opacity:1" width="3300" x="0" y="0"/>
+ </g>
+ <g id="Guides">
+  <g id="H-reference" style="fill:#27AAE1;stroke:none;" transform="matrix(1 0 0 1 339 696)"></g>
+  <line id="Baseline-S" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="696" y2="696"/>
+  <line id="Capline-S" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="625.541" y2="625.541"/>
+  <g id="H-reference" style="fill:#27AAE1;stroke:none;" transform="matrix(1 0 0 1 339 1126)"></g>
+  <line id="Baseline-M" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1126" y2="1126"/>
+  <line id="Capline-M" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1055.54" y2="1055.54"/>
+  <g id="H-reference" style="fill:#27AAE1;stroke:none;" transform="matrix(1 0 0 1 339 1556)"></g>
+  <line id="Baseline-L" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1556" y2="1556"/>
+  <line id="Capline-L" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1485.54" y2="1485.54"/>
+  <line id="left-margin-Regular-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1401.84" x2="1401.84" y1="600.79" y2="720.12"/>
+  <line id="right-margin-Regular-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1488.283" x2="1488.283" y1="600.79" y2="720.12"/>
+  <line id="left-margin-Regular-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1401.84" x2="1401.84" y1="1030.79" y2="1150.12"/>
+  <line id="right-margin-Regular-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1512.24" x2="1512.24" y1="1030.79" y2="1150.12"/>
+  <line id="left-margin-Regular-L" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1401.84" x2="1401.84" y1="1460.79" y2="1580.12"/>
+  <line id="right-margin-Regular-L" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1544.256" x2="1544.256" y1="1460.79" y2="1580.12"/>
+ </g>
+ <g id="Symbols">
+  <g id="Regular-S" transform="matrix(1 0 0 1 1401.84 696)">
+   <path d="M46.377 -64.04L46.377 -38.377L72.04 -38.377C73.78 -38.377 75.191 -36.966 75.191 -35.226C75.191 -33.485 73.78 -32.074 72.04 -32.074L46.377 -32.074L46.377 -6.411C46.377 -4.671 44.966 -3.26 43.225 -3.26C41.485 -3.26 40.074 -4.671 40.074 -6.411L40.074 -32.074L14.411 -32.074C12.67 -32.074 11.259 -33.485 11.259 -35.226C11.259 -36.966 12.67 -38.377 14.411 -38.377L40.074 -38.377L40.074 -64.04C40.074 -65.781 41.485 -67.192 43.225 -67.192C44.966 -67.192 46.377 -65.781 46.377 -64.04Z"/>
+  </g>
+  <g id="Regular-M" transform="matrix(1 0 0 1 1401.84 1126)">
+   <path d="M59.23 -72.025L59.23 -39.25L92.005 -39.25C94.228 -39.25 96.03 -37.448 96.03 -35.225C96.03 -33.002 94.228 -31.2 92.005 -31.2L59.23 -31.2L59.23 1.575C59.23 3.798 57.428 5.6 55.205 5.6C52.982 5.6 51.18 3.798 51.18 1.575L51.18 -31.2L18.405 -31.2C16.182 -31.2 14.38 -33.002 14.38 -35.225C14.38 -37.448 16.182 -39.25 18.405 -39.25L51.18 -39.25L51.18 -72.025C51.18 -74.248 52.982 -76.05 55.205 -76.05C57.428 -76.05 59.23 -74.248 59.23 -72.025Z"/>
+  </g>
+  <g id="Regular-L" transform="matrix(1 0 0 1 1401.84 1556)">
+   <path d="M76.406 -82.696L76.406 -40.416L118.686 -40.416C121.554 -40.416 123.878 -38.091 123.878 -35.224C123.878 -32.356 121.554 -30.031 118.686 -30.031L76.406 -30.031L76.406 12.248C76.406 15.116 74.082 17.441 71.214 17.441C68.346 17.441 66.022 15.116 66.022 12.248L66.022 -30.031L23.742 -30.031C20.874 -30.031 18.55 -32.356 18.55 -35.224C18.55 -38.091 20.874 -40.416 23.742 -40.416L66.022 -40.416L66.022 -82.696C66.022 -85.563 68.346 -87.888 71.214 -87.888C74.082 -87.888 76.406 -85.563 76.406 -82.696Z"/>
+  </g>
+ </g>
+</svg>

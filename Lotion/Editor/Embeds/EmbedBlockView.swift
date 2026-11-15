@@ -43,7 +43,7 @@ final class EmbedBlockView: BlockView, WKUIDelegate, WKNavigationDelegate {
 
     required init(block: Block, theme: BlockTheme, editor: BlockEditorView) {
         super.init(block: block, theme: theme, editor: editor)
-        menuButton.image = NSImage(systemSymbolName: "ellipsis", accessibilityDescription: "Options")
+        menuButton.image = NSImage(icon: "ellipsis", accessibilityDescription: "Options")
         menuButton.bezelStyle = .glass
         menuButton.controlSize = .small
         menuButton.imagePosition = .imageOnly
@@ -326,7 +326,7 @@ final class EmbedBlockView: BlockView, WKUIDelegate, WKNavigationDelegate {
     }
 
     private func symbol(_ name: String, size: CGFloat, color: NSColor, weight: NSFont.Weight = .regular) -> NSImage? {
-        NSImage(systemSymbolName: name, accessibilityDescription: nil)?
+        NSImage(icon: name, accessibilityDescription: nil)?
             .withSymbolConfiguration(.init(pointSize: size, weight: weight))?.tinted(color)
     }
 

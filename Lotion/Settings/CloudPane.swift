@@ -66,7 +66,7 @@ struct CloudPane: View {
                                 didCopyPrompt = false
                             }
                         } label: {
-                            Label(didCopyPrompt ? "Copied" : "Copy Setup Prompt", systemImage: didCopyPrompt ? "checkmark" : "doc.on.doc")
+                            Label(didCopyPrompt ? "Copied" : "Copy Setup Prompt", icon: didCopyPrompt ? "checkmark" : "doc.on.doc")
                                 .contentTransition(.symbolEffect(.replace))
                         }
                         .buttonStyle(.glassProminent)
@@ -124,7 +124,7 @@ struct CloudPane: View {
             }
         case .connected(let info, let latest):
             VStack(alignment: .leading, spacing: 2) {
-                Label("Connected", systemImage: "checkmark.circle.fill")
+                Label("Connected", icon: "checkmark.circle.fill")
                     .foregroundStyle(.green)
                 if let latest, info.version.isOlderVersion(than: latest) {
                     Text("Lotion Share \(info.version) · Version \(latest) is out. Run the setup prompt again to update.")
@@ -138,7 +138,7 @@ struct CloudPane: View {
             }
         case .failed(let message):
             VStack(alignment: .leading, spacing: 2) {
-                Label("Not connected", systemImage: "exclamationmark.triangle.fill")
+                Label("Not connected", icon: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
                 Text(message)
                     .font(.caption)

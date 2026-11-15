@@ -706,8 +706,18 @@ struct AgentHandlers {
 
     private func symbol(_ raw: String?) throws -> String? {
         guard let name = raw?.trimmingCharacters(in: .whitespaces), !name.isEmpty else { return nil }
+        if let (catalog, catalogName) = IconCatalog.resolve(name) {
+            guard catalog.contains(catalogName) else {
+                let near = catalog.search(catalogName, limit: 5)
+                    .map { "\"" + catalog.icon(named: $0) + "\"" }
+                    .joined(separator: ", ")
+                let hint = near.isEmpty ? "" : " Close: " + near + "."
+                throw AgentToolError.message("There's no “\(name)” icon." + hint)
+            }
+            return name
+        }
         guard NSImage(systemSymbolName: name, accessibilityDescription: nil) != nil else {
-            throw AgentToolError.message("“\(name)” isn't an SF Symbol. Try names like \"lightbulb\", \"book\", \"star\" or \"folder\".")
+            throw AgentToolError.message("“\(name)” isn't an SF Symbol, \"hugeicon:\" or \"brand:\" name. Try names like \"lightbulb\", \"book\", \"star\", \"folder\", \"hugeicon:leaf-01\" or \"brand:github\".")
         }
         return name
     }

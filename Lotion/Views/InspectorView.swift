@@ -105,7 +105,7 @@ private struct NoteInspector: View {
                     InspectorSection("Location", key: "location") {
                         Button { state.showInFinder(note) } label: {
                             HStack(spacing: Space.m) {
-                                Image(systemName: note.folder.map { state.library.icon(for: $0) } ?? "tray")
+                                IconGlyph(note.folder.map { state.library.icon(for: $0) } ?? "tray")
                                     .font(.system(size: 14))
                                     .foregroundStyle(Palette.secondaryLabel)
                                     .frame(width: 20)
@@ -169,7 +169,7 @@ private struct InspectorSection<Content: View>: View {
                         .tracking(0.6)
                         .foregroundStyle(Palette.tertiaryLabel)
                     Spacer()
-                    Image(systemName: "chevron.down")
+                    Image(icon: "chevron.down")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(isHovering ? Palette.secondaryLabel : Palette.tertiaryLabel)
                         .rotationEffect(.degrees(isCollapsed ? -90 : 0))
@@ -207,7 +207,7 @@ private struct PropertyRow: View {
 
     var body: some View {
         HStack(spacing: Space.m) {
-            Image(systemName: symbol)
+            Image(icon: symbol)
                 .font(.system(size: 13))
                 .foregroundStyle(Palette.secondaryLabel)
                 .frame(width: 20)
@@ -269,7 +269,7 @@ private struct ActionLabel: View {
 
     var body: some View {
         HStack(spacing: Space.m) {
-            Image(systemName: symbol)
+            Image(icon: symbol)
                 .font(.system(size: 13))
                 .frame(width: 20)
             Text(title)

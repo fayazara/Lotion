@@ -111,7 +111,7 @@ struct EmptyStateView<Actions: View>: View {
 
     var body: some View {
         VStack(spacing: Space.l) {
-            Image(systemName: systemImage)
+            Image(icon: systemImage)
                 .font(.system(size: 22, weight: .medium))
                 .foregroundStyle(Palette.secondaryLabel)
                 .frame(width: 56, height: 56)

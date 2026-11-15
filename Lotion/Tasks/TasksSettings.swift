@@ -20,7 +20,7 @@ struct TasksPane: View {
                                          detail: "Opens a field from any app that turns plain words into a task: “Call mum tomorrow 6pm #home p1”.")
                 }
                 if shortcut != nil, !GlobalHotKey.quickAdd.isRegistered, !GlobalHotKey.quickAdd.isSuspended {
-                    Label("Another app is using this shortcut. Pick a different one.", systemImage: "exclamationmark.triangle.fill")
+                    Label("Another app is using this shortcut. Pick a different one.", icon: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }

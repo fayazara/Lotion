@@ -76,7 +76,7 @@ struct TaskCheckbox: View {
                 Circle()
                     .strokeBorder(tint, lineWidth: priority == nil ? 1.2 : 1.6)
                 if checked || isHovered {
-                    Image(systemName: "checkmark")
+                    Image(icon: "checkmark")
                         .font(.system(size: size * 0.5, weight: .bold))
                         .foregroundStyle(checked ? Color(nsColor: colors.palette.background) : tint)
                 }
@@ -160,31 +160,31 @@ struct TaskRow: View {
         if hasLeft || note != nil {
             HStack(spacing: 14) {
                 if let due = task.due, showsDay {
-                    Label(TaskDates.label(due: due, minutes: task.minutes), systemImage: "calendar")
+                    Label(TaskDates.label(due: due, minutes: task.minutes), icon: "calendar")
                         .foregroundStyle(colors.due(task))
                 } else if let minutes = task.minutes {
-                    Label(TaskDates.timeLabel(minutes), systemImage: "clock")
+                    Label(TaskDates.timeLabel(minutes), icon: "clock")
                         .foregroundStyle(colors.due(task))
                 }
                 if let priority = task.priority, let color = colors.priority(priority) {
-                    Label("P\(priority)", systemImage: "flag.fill")
+                    Label("P\(priority)", icon: "flag.fill")
                         .foregroundStyle(color)
                 }
                 if let rule = task.recurrence {
-                    Label(rule.text.capitalizedFirst, systemImage: "repeat")
+                    Label(rule.text.capitalizedFirst, icon: "repeat")
                 }
                 if let duration = task.duration {
-                    Label(TaskDates.durationString(duration), systemImage: "hourglass")
+                    Label(TaskDates.durationString(duration), icon: "hourglass")
                 }
                 ForEach(task.tags, id: \.self) { tag in
-                    Label(tag, systemImage: "tag")
+                    Label(tag, icon: "tag")
                 }
                 Spacer(minLength: Space.l)
                 if let note {
                     Button { state.open(task) } label: {
                         HStack(spacing: 5) {
                             Text(place(note))
-                            Image(systemName: note.isScratchpad ? "note.text" : "doc.text")
+                            Image(icon: note.isScratchpad ? "note.text" : "doc.text")
                                 .imageScale(.small)
                         }
                         .foregroundStyle(isHovered ? colors.ink.opacity(0.75) : colors.secondary)
@@ -333,23 +333,23 @@ struct TaskMenuItems: View {
     private var index: TaskIndex { state.library.tasks }
 
     var body: some View {
-        Button(task.checked ? "Mark as Not Done" : "Mark as Done", systemImage: task.checked ? "circle" : "checkmark.circle") {
+        Button(task.checked ? "Mark as Not Done" : "Mark as Done", icon: task.checked ? "circle" : "checkmark.circle") {
             index.setChecked(task, !task.checked)
         }
-        Button("Open Note", systemImage: "arrow.up.right.square") { state.open(task) }
+        Button("Open Note", icon: "arrow.up.right.square") { state.open(task) }
         Divider()
         Section("Due") {
             ForEach(TaskQuickDate.allCases, id: \.self) { choice in
-                Button(choice.title, systemImage: choice.symbol) { index.move(task, to: choice.date) }
+                Button(choice.title, icon: choice.symbol) { index.move(task, to: choice.date) }
             }
             if task.minutes != nil {
-                Button("Remove Time", systemImage: "clock.badge.xmark") { index.setDue(task, task.due, minutes: nil) }
+                Button("Remove Time", icon: "clock.badge.xmark") { index.setDue(task, task.due, minutes: nil) }
             }
             if task.due != nil {
-                Button("No Date", systemImage: "calendar.badge.minus") { index.setDue(task, nil) }
+                Button("No Date", icon: "calendar.badge.minus") { index.setDue(task, nil) }
             }
         }
-        Menu("Priority", systemImage: "flag") {
+        Menu("Priority", icon: "flag") {
             ForEach(1...3, id: \.self) { level in
                 Button("Priority \(level)") { index.setPriority(task, level) }
                     .disabled(task.priority == level)
@@ -370,7 +370,7 @@ private struct TaskMenuButton: View {
         Menu {
             TaskMenuItems(task: task, state: state)
         } label: {
-            Image(systemName: "ellipsis")
+            Image(icon: "ellipsis")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(colors.secondary)
                 .frame(width: 22, height: 20)
@@ -436,7 +436,7 @@ struct TaskSection<Accessory: View>: View {
                 Button {
                     withAnimation(.easeOut(duration: 0.18)) { isCollapsed = !collapsed }
                 } label: {
-                    Image(systemName: "chevron.down")
+                    Image(icon: "chevron.down")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(colors.secondary)
                         .rotationEffect(.degrees(collapsed ? -90 : 0))
@@ -497,7 +497,7 @@ struct RescheduleMenu: View {
     var body: some View {
         Menu {
             ForEach(TaskQuickDate.allCases, id: \.self) { choice in
-                Button(choice.title, systemImage: choice.symbol) {
+                Button(choice.title, icon: choice.symbol) {
                     for task in tasks { state.library.tasks.move(task, to: choice.date) }
                 }
             }
@@ -565,7 +565,7 @@ struct TaskQuickAddField: View {
             isEditing = true
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: "plus")
+                Image(icon: "plus")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(colors.accent)
                     .frame(width: 18)
@@ -673,7 +673,7 @@ struct TaskDraftChips: View {
 
     private func chip(_ title: String, _ symbol: String, _ color: Color) -> some View {
         HStack(spacing: 4) {
-            Image(systemName: symbol).imageScale(.small)
+            Image(icon: symbol).imageScale(.small)
             Text(title)
         }
         .font(.system(size: 12, weight: .medium))
@@ -697,7 +697,7 @@ struct TaskTargetMenu: View {
 
     var body: some View {
         Menu {
-            Button(TaskIndex.inboxTitle, systemImage: "tray") { choice = state.library.tasks.inbox(create: true)?.id }
+            Button(TaskIndex.inboxTitle, icon: "tray") { choice = state.library.tasks.inbox(create: true)?.id }
             Divider()
             ForEach(state.library.notes.filter { !$0.title.isEmpty && $0.title != TaskIndex.inboxTitle }
                         .sorted { $0.modified > $1.modified }.prefix(20)) { note in
@@ -705,9 +705,9 @@ struct TaskTargetMenu: View {
             }
         } label: {
             HStack(spacing: 5) {
-                Image(systemName: current == nil ? "tray" : "doc.text").imageScale(.small)
+                Image(icon: current == nil ? "tray" : "doc.text").imageScale(.small)
                 Text(current?.displayTitle ?? TaskIndex.inboxTitle)
-                Image(systemName: "chevron.down")
+                Image(icon: "chevron.down")
                     .font(.system(size: 8, weight: .bold))
                     .opacity(0.7)
             }

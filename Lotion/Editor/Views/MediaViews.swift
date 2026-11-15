@@ -158,7 +158,7 @@ enum MediaPlaceholder {
         path.lineWidth = 1
         path.stroke()
         let side = min(26, max(12, min(rect.width, rect.height) * 0.3))
-        guard let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?
+        guard let image = NSImage(icon: symbol, accessibilityDescription: nil)?
             .withSymbolConfiguration(.init(pointSize: side, weight: .light)) else { return }
         let icon = image.tinted(palette.marker)
         var iconRect = NSRect(x: rect.midX - icon.size.width / 2, y: rect.midY - icon.size.height / 2, width: icon.size.width, height: icon.size.height)
@@ -203,7 +203,7 @@ final class MediaBlockView: BlockView {
 
     required init(block: Block, theme: BlockTheme, editor: BlockEditorView) {
         super.init(block: block, theme: theme, editor: editor)
-        expandButton.image = NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right", accessibilityDescription: "Expand")
+        expandButton.image = NSImage(icon: "arrow.up.left.and.arrow.down.right", accessibilityDescription: "Expand")
         expandButton.bezelStyle = .glass
         expandButton.controlSize = .small
         expandButton.isBordered = true

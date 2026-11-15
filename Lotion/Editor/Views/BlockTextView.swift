@@ -482,7 +482,7 @@ final class BlockLayoutManager: NSLayoutManager {
                 icon.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true,
                           hints: [.interpolation: NSImageInterpolation.high])
                 NSGraphicsContext.restoreGraphicsState()
-            } else if let globe = NSImage(systemSymbolName: "globe", accessibilityDescription: nil)?
+            } else if let globe = NSImage(icon: "globe", accessibilityDescription: nil)?
                         .withSymbolConfiguration(.init(pointSize: side * 0.8, weight: .regular)) {
                 let color = (storage.attribute(.foregroundColor, at: start, effectiveRange: nil) as? NSColor ?? .secondaryLabelColor)
                     .withAlphaComponent(0.6)

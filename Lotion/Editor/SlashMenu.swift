@@ -84,7 +84,7 @@ struct SlashItem {
     }
 
     var menuImage: NSImage? {
-        if let symbol { return NSImage(systemSymbolName: symbol, accessibilityDescription: title) }
+        if let symbol { return NSImage(icon: symbol, accessibilityDescription: title) }
         let size = NSSize(width: 18, height: 16)
         let image = NSImage(size: size, flipped: false) { rect in
             let label = (glyph ?? "") as NSString
@@ -449,7 +449,7 @@ private final class SlashListView: NSView {
             let border = NSBezierPath(roundedRect: tile.insetBy(dx: 0.5, dy: 0.5), xRadius: 5, yRadius: 5)
             border.lineWidth = 0.5
             border.stroke()
-            if let symbol = item.symbol, let image = NSImage(systemSymbolName: symbol, accessibilityDescription: item.title)?
+            if let symbol = item.symbol, let image = NSImage(icon: symbol, accessibilityDescription: item.title)?
                 .withSymbolConfiguration(.init(pointSize: 12, weight: .medium)) {
                 let tinted = image.tinted(.secondaryLabelColor)
                 let size = tinted.size

@@ -26,7 +26,7 @@ struct QuickNotePane: View {
                                          detail: "Opens the quick note pane from any app. Press it again while typing in the pane to put it away.")
                 }
                 if shortcut != nil, !GlobalHotKey.quickNote.isRegistered, !GlobalHotKey.quickNote.isSuspended {
-                    Label("Another app is using this shortcut. Pick a different one.", systemImage: "exclamationmark.triangle.fill")
+                    Label("Another app is using this shortcut. Pick a different one.", icon: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }
@@ -92,7 +92,7 @@ struct ShortcutRecorder: View {
                     shortcut = nil
                     slot.shortcut = nil
                 } label: {
-                    Image(systemName: "xmark.circle.fill")
+                    Image(icon: "xmark.circle.fill")
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)

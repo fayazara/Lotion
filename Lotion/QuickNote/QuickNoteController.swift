@@ -630,7 +630,7 @@ final class QuickNoteController: NSObject, NSWindowDelegate, NSToolbarDelegate {
         switch identifier {
         case Self.actionsItem:
             let item = NSMenuToolbarItem(itemIdentifier: identifier)
-            item.image = NSImage(systemSymbolName: "command", accessibilityDescription: "Actions")
+            item.image = NSImage(icon: "command", accessibilityDescription: "Actions")
             item.label = "Actions"
             item.toolTip = "Actions"
             item.showsIndicator = false
@@ -638,7 +638,7 @@ final class QuickNoteController: NSObject, NSWindowDelegate, NSToolbarDelegate {
             return item
         case Self.browseItem:
             let item = NSToolbarItem(itemIdentifier: identifier)
-            item.image = NSImage(systemSymbolName: "square.on.square", accessibilityDescription: "Browse Entries")
+            item.image = NSImage(icon: "square.on.square", accessibilityDescription: "Browse Entries")
             item.label = "Entries"
             item.toolTip = "Browse Entries (⌘P)"
             item.target = self
@@ -647,7 +647,7 @@ final class QuickNoteController: NSObject, NSWindowDelegate, NSToolbarDelegate {
             return item
         case Self.newItem:
             let item = NSToolbarItem(itemIdentifier: identifier)
-            item.image = NSImage(systemSymbolName: "plus", accessibilityDescription: "New Entry")
+            item.image = NSImage(icon: "plus", accessibilityDescription: "New Entry")
             item.label = "New Entry"
             item.toolTip = "New Entry (⌘N)"
             item.target = self
@@ -700,7 +700,7 @@ private final class QuickNoteActionsMenu: NSMenu, NSMenuDelegate {
         let item = ClosureMenuItem(title: title) { [weak controller] in
             if let controller { action(controller) }
         }
-        item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+        item.image = NSImage(icon: symbol, accessibilityDescription: nil)
         return item
     }
 }

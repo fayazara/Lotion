@@ -8,6 +8,7 @@
 //  glyph in a 20 pt column, 12 pt from the title, count on the right.
 //
 
+import Combine
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -27,6 +28,10 @@ struct SidebarView: View {
                 }
             }
             .listStyle(.sidebar)
+            // Like Screendrop's, the list never holds keyboard focus, so the
+            // selection stays the quiet grey rather than the focused accent.
+            // ⌘1–3, ⇧⌘H and search still move around it.
+            .focusable(false)
             // Rows bring their own menus; this one is for the empty space and headers.
             .contextMenu {
                 Button("New Note") { state.newNote(useSelection: false) }
@@ -53,7 +58,7 @@ struct SidebarView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { state.newNote() } label: {
-                    Label("New Note", systemImage: "square.and.pencil")
+                    Label("New Note", icon: "square.and.pencil")
                 }
                 .help("New Note (⌘N)")
             }
@@ -66,7 +71,7 @@ struct SidebarView: View {
         // Home and the scratchpad sit together, as the places that aren't notes in a list.
         Section {
             SidebarRow(title: "Home") {
-                Image(systemName: "house")
+                Image(icon: "house")
             }
             .tag(AppState.homeID)
             .help("Recent notes, the scratchpad and folders (⇧⌘H)")
@@ -75,12 +80,12 @@ struct SidebarView: View {
             TaskListRow(list: .inbox, state: state)
             if let scratchpad = library.scratchpad {
                 SidebarRow(title: "Scratchpad", count: scratchpad.entryCount) {
-                    Image(systemName: "note.text")
+                    Image(icon: "note.text")
                 }
                 .tag(scratchpad.id)
                 .help("An endless page for quick notes. ⌘↩ starts a new entry.")
                 .contextMenu {
-                    Button("New Entry", systemImage: "plus") { state.newScratchpadEntry() }
+                    Button("New Entry", icon: "plus") { state.newScratchpadEntry() }
                     Divider()
                     NoteMenuItems(note: scratchpad, state: state)
                 }
@@ -153,7 +158,10 @@ struct SidebarView: View {
 /// their column, and section headers are indented to line up with them.
 enum SidebarMetrics {
     static let glyphColumn: CGFloat = 20
-    static let glyphSpacing: CGFloat = 10
+    /// Hugeicons are outlines; at this size they carry the weight Screendrop's
+    /// filled SF Symbols do at the sidebar's own.
+    static let glyphSize: CGFloat = 16
+    static let glyphSpacing: CGFloat = 12
     /// How far the list's own header inset sits left of a row's content.
     static let headerIndent: CGFloat = 11
 }
@@ -181,9 +189,7 @@ struct SidebarRow<Icon: View>: View {
         // without one), with room between glyph and title.
         HStack(spacing: SidebarMetrics.glyphSpacing) {
             icon()
-                .symbolVariant(.fill)
-                .sidebarGlyphTint()
-                .frame(width: SidebarMetrics.glyphColumn, alignment: .leading)
+                .sidebarGlyph()
             Text(title)
                 .lineLimit(1)
                 .foregroundStyle(isPlaceholder ? .secondary : .primary)
@@ -215,7 +221,7 @@ private struct TaskListRow: View {
         default: ("Inbox", "tray", AppState.inboxID, "Tasks from Quick Add, waiting for a date (⌘3)", index.inboxTasks().count)
         }
         SidebarRow(title: title, count: count == 0 ? nil : count) {
-            Image(systemName: symbol)
+            if list == .today { TodayGlyph() } else { Image(icon: symbol) }
         }
         .tag(tag)
         .help(help)
@@ -244,7 +250,7 @@ private struct NoteRow: View {
 
     var body: some View {
         SidebarRow(title: note.displayTitle, isPlaceholder: note.title.isEmpty) {
-            Image(systemName: state.library.icon(for: note) ?? systemImage)
+            IconGlyph(state.library.icon(for: note) ?? systemImage)
         }
         .tag(note.id)
         .draggable(note.id.uuidString)
@@ -284,7 +290,7 @@ private struct FolderRow: View {
                     FolderNameField(name: folder) { state.renameFolder(folder, to: $0) }
                 } else {
                     SidebarRow(title: folder, count: state.library.count(in: folder)) {
-                        Image(systemName: state.library.icon(for: folder))
+                        IconGlyph(state.library.icon(for: folder))
                     }
                     .contentShape(Rectangle())
                     .onTapGesture { isExpanded.wrappedValue.toggle() }
@@ -322,9 +328,8 @@ private struct FolderNameField: View {
 
     var body: some View {
         HStack(spacing: SidebarMetrics.glyphSpacing) {
-            Image(systemName: "folder.fill")
-                .sidebarGlyphTint()
-                .frame(width: SidebarMetrics.glyphColumn, alignment: .leading)
+            Image(icon: "folder.fill")
+                .sidebarGlyph()
             TextField("Folder Name", text: $text)
                 .textFieldStyle(.plain)
                 .focused($isFocused)
@@ -354,10 +359,8 @@ private struct SearchResultRow: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: SidebarMetrics.glyphSpacing) {
-            Image(systemName: "doc.text")
-                .symbolVariant(.fill)
-                .sidebarGlyphTint()
-                .frame(width: SidebarMetrics.glyphColumn, alignment: .leading)
+            Image(icon: "doc.text")
+                .sidebarGlyph()
             VStack(alignment: .leading, spacing: 1) {
                 Text(result.note.displayTitle)
                     .foregroundStyle(.primary)
@@ -373,6 +376,37 @@ private struct SearchResultRow: View {
         .padding(.vertical, 4)
         .padding(.trailing, 2)
         .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+    }
+}
+
+// MARK: - Today Glyph
+
+/// Today's glyph: an empty calendar page with the day of the month written
+/// on it, turned over at midnight.
+private struct TodayGlyph: View {
+    @State private var day = Self.today
+
+    private static var today: String { String(format: "%02d", Calendar.current.component(.day, from: .now)) }
+
+    var body: some View {
+        Image(icon: "calendar.today")
+            .overlay {
+                // The page below the calendar's header line, in the icon's
+                // 24-unit grid: the shell runs 2–22, the header sits at 10.
+                GeometryReader { geometry in
+                    let unit = geometry.size.height / 21
+                    Text(day)
+                        .font(.system(size: unit * 7.2, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .tracking(-0.3)
+                        .fixedSize()
+                        .position(x: geometry.size.width / 2, y: unit * 14.25)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in
+                day = Self.today
+            }
+            .accessibilityLabel("Today, \(Date.now.formatted(date: .complete, time: .omitted))")
     }
 }
 
@@ -396,7 +430,12 @@ private struct SidebarGlyphTint: ViewModifier {
 }
 
 private extension View {
-    func sidebarGlyphTint() -> some View { modifier(SidebarGlyphTint()) }
+    /// A row's glyph: tinted, sized and centred in the glyph column.
+    func sidebarGlyph() -> some View {
+        modifier(SidebarGlyphTint())
+            .font(.system(size: SidebarMetrics.glyphSize))
+            .frame(width: SidebarMetrics.glyphColumn, alignment: .center)
+    }
 }
 
 // MARK: - Footer
@@ -408,8 +447,8 @@ private struct SidebarFooter: View {
     var body: some View {
         Button { SettingsWindowController.show() } label: {
             HStack(spacing: 8) {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 12, weight: .semibold))
+                Image(icon: "gearshape.fill")
+                    .font(.system(size: 15))
                     .frame(width: 20)
                 Text("Settings")
                     .font(.system(size: 13))
@@ -451,19 +490,19 @@ struct NoteMenuItems: View {
 
     var body: some View {
         if note.isScratchpad {
-            Button("Copy Markdown", systemImage: "doc.on.doc") { state.copyMarkdown(note) }
-            Button("Export as Markdown…", systemImage: "square.and.arrow.up") { state.exportMarkdown(note) }
-            Button("Show in Finder", systemImage: "finder") { state.showInFinder(note) }
+            Button("Copy Markdown", icon: "doc.on.doc") { state.copyMarkdown(note) }
+            Button("Export as Markdown…", icon: "square.and.arrow.up") { state.exportMarkdown(note) }
+            Button("Show in Finder", icon: "finder") { state.showInFinder(note) }
         } else {
             items
         }
     }
 
     @ViewBuilder private var items: some View {
-        Button(state.library.isPinned(note) ? "Unpin" : "Pin", systemImage: state.library.isPinned(note) ? "pin.slash" : "pin") {
+        Button(state.library.isPinned(note) ? "Unpin" : "Pin", icon: state.library.isPinned(note) ? "pin.slash" : "pin") {
             state.togglePin(note)
         }
-        Menu("Move To", systemImage: "folder") {
+        Menu("Move To", icon: "folder") {
             Button("Notes") { state.move(note, to: nil) }
                 .disabled(note.folder == nil)
             if !state.library.folders.isEmpty {
@@ -475,22 +514,22 @@ struct NoteMenuItems: View {
             }
         }
         if let changeIcon {
-            Button("Change Icon…", systemImage: "face.smiling") { changeIcon() }
+            Button("Change Icon…", icon: "face.smiling") { changeIcon() }
             if state.library.icon(for: note) != nil {
-                Button("Default Icon", systemImage: NoteIcon.default) { state.library.setIcon(nil, for: note) }
+                Button("Default Icon", icon: NoteIcon.default) { state.library.setIcon(nil, for: note) }
             }
         }
         if state.library.cover(for: note) == nil {
-            Button("Add Cover", systemImage: "photo") { state.library.addRandomCover(for: note) }
+            Button("Add Cover", icon: "photo") { state.library.addRandomCover(for: note) }
         } else {
-            Button("Remove Cover", systemImage: "photo.badge.minus") { state.library.setCover(nil, for: note) }
+            Button("Remove Cover", icon: "photo.badge.minus") { state.library.setCover(nil, for: note) }
         }
         Divider()
-        Button("Copy Markdown", systemImage: "doc.on.doc") { state.copyMarkdown(note) }
-        Button("Export as Markdown…", systemImage: "square.and.arrow.up") { state.exportMarkdown(note) }
-        Button("Show in Finder", systemImage: "finder") { state.showInFinder(note) }
+        Button("Copy Markdown", icon: "doc.on.doc") { state.copyMarkdown(note) }
+        Button("Export as Markdown…", icon: "square.and.arrow.up") { state.exportMarkdown(note) }
+        Button("Show in Finder", icon: "finder") { state.showInFinder(note) }
         Divider()
-        Button("Move to Trash", systemImage: "trash", role: .destructive) { state.delete(note) }
+        Button("Move to Trash", icon: "trash", role: .destructive) { state.delete(note) }
     }
 }
 

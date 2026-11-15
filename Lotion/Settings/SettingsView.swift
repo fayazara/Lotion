@@ -100,7 +100,7 @@ struct SettingsView: View {
                         Text(pane.title)
                     } icon: {
                         // Symbols differ in width; a fixed slot keeps the titles aligned.
-                        Image(systemName: pane.symbol).frame(width: 20, alignment: .center)
+                        Image(icon: pane.symbol).frame(width: 20, alignment: .center)
                     }
                     .listItemTint(.monochrome)
                     .tag(pane)
@@ -132,11 +132,11 @@ struct SettingsView: View {
         .interfaceFont(interfaceFont)
         .toolbar {
             ToolbarItemGroup(placement: .navigation) {
-                Button { go(by: -1) } label: { Image(systemName: "chevron.left") }
+                Button { go(by: -1) } label: { Image(icon: "chevron.left") }
                     .disabled(historyIndex <= 0)
                     .help("Go Back")
                     .accessibilityLabel("Go Back")
-                Button { go(by: 1) } label: { Image(systemName: "chevron.right") }
+                Button { go(by: 1) } label: { Image(icon: "chevron.right") }
                     .disabled(historyIndex >= history.count - 1)
                     .help("Go Forward")
                     .accessibilityLabel("Go Forward")
@@ -552,7 +552,7 @@ private struct ThemeCard: View {
 
     /// The side in use is in the theme's accent; the other is dim.
     private func sideMark(_ symbol: String, inUse: Bool, palette: ThemePalette) -> some View {
-        Image(systemName: symbol)
+        Image(icon: symbol)
             .font(.system(size: 10, weight: .semibold))
             .foregroundStyle(inUse ? Color(nsColor: palette.accent) : Color(nsColor: palette.marker))
     }
@@ -750,7 +750,7 @@ private struct MediaPane: View {
         SettingsPage {
             Section {
                 LabeledContent {
-                    Label("Always on", systemImage: "checkmark")
+                    Label("Always on", icon: "checkmark")
                         .foregroundStyle(.secondary)
                 } label: {
                     SettingsControlLabel("Keep images from the web",

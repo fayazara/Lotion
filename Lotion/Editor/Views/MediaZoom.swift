@@ -255,7 +255,7 @@ enum ZoomCursor {
     /// A magnifier drawn in black over a white halo, so it reads on any page.
     private static func make(_ symbol: String) -> NSCursor {
         let configuration = NSImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
-        guard let glyph = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?.withSymbolConfiguration(configuration) else {
+        guard let glyph = NSImage(icon: symbol, accessibilityDescription: nil)?.withSymbolConfiguration(configuration) else {
             return .pointingHand
         }
         let size = NSSize(width: glyph.size.width + 4, height: glyph.size.height + 4)

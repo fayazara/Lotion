@@ -171,7 +171,7 @@ final class LinkPreview: NSObject, WKNavigationDelegate {
         self.panel = panel
         titleLabel.stringValue = Self.cachedTitle(for: link) ?? host
         hostLabel.stringValue = host
-        iconView.image = Favicons.icon(for: link) ?? NSImage(systemSymbolName: "globe", accessibilityDescription: nil)
+        iconView.image = Favicons.icon(for: link) ?? NSImage(icon: "globe", accessibilityDescription: nil)
         if let snapshot = Self.cachedSnapshot(for: link) {
             snapshotView.image = snapshot
             snapshotView.isHidden = false
@@ -286,7 +286,7 @@ final class LinkPreview: NSObject, WKNavigationDelegate {
             view.layer?.masksToBounds = true
             content.addSubview(view)
         }
-        placeholder.image = NSImage(systemSymbolName: "globe", accessibilityDescription: nil)?
+        placeholder.image = NSImage(icon: "globe", accessibilityDescription: nil)?
             .withSymbolConfiguration(.init(pointSize: 28, weight: .light))
         placeholder.imageScaling = .scaleNone
 

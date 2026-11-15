@@ -153,8 +153,8 @@ struct ContentView: View {
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             Picker("Editor", selection: $editorMode) {
-                Label("Blocks", systemImage: "text.document").tag(EditorMode.blocks)
-                Label("Markdown", systemImage: "chevron.left.forwardslash.chevron.right").tag(EditorMode.markdown)
+                Label("Blocks", icon: "text.document").tag(EditorMode.blocks)
+                Label("Markdown", icon: "chevron.left.forwardslash.chevron.right").tag(EditorMode.markdown)
             }
             .pickerStyle(.segmented)
             .labelStyle(.iconOnly)
@@ -172,7 +172,7 @@ struct ContentView: View {
                     NoteMenuItems(note: note, state: state)
                 }
             } label: {
-                Label("More", systemImage: "ellipsis")
+                Label("More", icon: "ellipsis")
             }
             .menuIndicator(.hidden)
             .disabled(state.selectedNote == nil)
@@ -180,7 +180,7 @@ struct ContentView: View {
         }
         ToolbarItem(placement: .primaryAction) {
             Button { inspectorVisible.toggle() } label: {
-                Label(inspectorVisible ? "Hide Inspector" : "Show Inspector", systemImage: "sidebar.right")
+                Label(inspectorVisible ? "Hide Inspector" : "Show Inspector", icon: "sidebar.right")
             }
             .help(inspectorVisible ? "Hide Inspector (⌥⌘I)" : "Show Inspector (⌥⌘I)")
         }

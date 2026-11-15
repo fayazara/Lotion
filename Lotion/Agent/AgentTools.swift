@@ -251,10 +251,10 @@ enum AgentTools {
             tool(
                 "set_note_icon",
                 title: "Set note icon",
-                description: "Sets the icon shown beside a note's title and in the sidebar: any SF Symbol name, such as \"lightbulb\", \"book\", \"checklist\", \"briefcase\", \"star\", \"calendar\", \"terminal\" or \"leaf\". Pass null or \"\" for the default.",
+                description: "Sets the icon shown beside a note's title and in the sidebar: any SF Symbol name, such as \"lightbulb\", \"book\", \"checklist\", \"briefcase\", \"star\", \"calendar\", \"terminal\" or \"leaf\", any free Hugeicon as \"hugeicon:<name>\", such as \"hugeicon:rocket-01\" or \"hugeicon:coffee-02\", or a brand's logo as \"brand:<name>\", such as \"brand:google\", \"brand:github\" or \"brand:cloudflare\". Pass null or \"\" for the default.",
                 properties: [
                     "note": noteProperty,
-                    "icon": ["type": ["string", "null"], "description": "SF Symbol name."],
+                    "icon": ["type": ["string", "null"], "description": "SF Symbol name, \"hugeicon:<name>\" or \"brand:<name>\"."],
                 ],
                 required: ["note"],
                 idempotent: true
@@ -341,7 +341,7 @@ enum AgentTools {
                 description: "Creates a folder at the top of the library. Folders are one level deep. Returns the name it got (made unique and file-safe).",
                 properties: [
                     "name": ["type": "string"],
-                    "icon": ["type": "string", "description": "SF Symbol name for the folder. Defaults to \"folder\"."],
+                    "icon": ["type": "string", "description": "SF Symbol name, \"hugeicon:<name>\" or \"brand:<name>\", for the folder. Defaults to \"folder\"."],
                 ],
                 required: ["name"]
             ),
@@ -366,7 +366,7 @@ enum AgentTools {
             tool(
                 "set_folder_icon",
                 title: "Set folder icon",
-                description: "Sets a folder's sidebar icon to any SF Symbol name. Pass null or \"\" for the plain folder.",
+                description: "Sets a folder's sidebar icon to any SF Symbol name, \"hugeicon:<name>\" or \"brand:<name>\". Pass null or \"\" for the plain folder.",
                 properties: [
                     "folder": ["type": "string"],
                     "icon": ["type": ["string", "null"]],

@@ -153,6 +153,32 @@ when asked, or bundle one by creating `Lotion/Secrets.plist` (git-ignored):
 </plist>
 ```
 
+### Icons
+
+The app's icons are [Hugeicons](https://hugeicons.com) (free Stroke Rounded set,
+MIT licensed, © Hugeicons), compiled into custom SF Symbols in
+`Lotion/Assets.xcassets/Hugeicons`. Code names icons by their SF Symbol name;
+`Scripts/hugeicons.tsv` says which Hugeicon draws each one, and any name not
+listed falls back to the SF Symbol. The icon picker also searches the whole
+free set by name, from `Lotion/Design/Hugeicons.txt`; icons picked there are
+saved as `hugeicon:<name>`. To add or swap an icon, edit the table and
+regenerate:
+
+```bash
+npm pack @hugeicons/core-free-icons && tar xzf hugeicons-core-free-icons-*.tgz
+swift Scripts/hugeicons.swift package/dist/esm Scripts/hugeicons.tsv Lotion/Assets.xcassets/Hugeicons Lotion/Design/Hugeicons.swift Lotion/Design/Hugeicons.txt
+```
+
+Brand logos in the picker come from the icon variants (`*-icon.svg`) of
+[gilbarbara/logos](https://github.com/gilbarbara/logos) (CC0; the marks remain
+their owners' trademarks), made one-colour and sized to match the icons, into `Lotion/Design/Brands.txt` and
+saved as `brand:<name>`. To refresh them:
+
+```bash
+git clone --depth 1 https://github.com/gilbarbara/logos.git
+swift Scripts/brands.swift logos Lotion/Design/Brands.txt
+```
+
 ### Demo library
 
 The **Lotion Demo** scheme opens a separate library filled with sample notes,

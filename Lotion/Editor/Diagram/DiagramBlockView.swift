@@ -64,7 +64,7 @@ final class DiagramBlockView: BlockView {
         NotificationCenter.default.addObserver(self, selector: #selector(chartDidScroll), name: NSView.boundsDidChangeNotification, object: chartScroll.contentView)
         addSubview(chartScroll, positioned: .below, relativeTo: editButton)
         editButton.action = #selector(toggleEditing)
-        zoomButton.image = NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right", accessibilityDescription: "Expand")
+        zoomButton.image = NSImage(icon: "arrow.up.left.and.arrow.down.right", accessibilityDescription: "Expand")
         zoomButton.action = #selector(zoom)
         render()
     }
@@ -322,7 +322,7 @@ final class DiagramBlockView: BlockView {
         case .empty: text = "Write a diagram below to draw it."
         case .unreadable: text = "Lotion couldn’t draw this diagram, so it shows as its source. Check its syntax."
         }
-        let symbol = NSImage(systemSymbolName: "point.3.connected.trianglepath.dotted", accessibilityDescription: nil)?
+        let symbol = NSImage(icon: "point.3.connected.trianglepath.dotted", accessibilityDescription: nil)?
             .withSymbolConfiguration(.init(pointSize: 12, weight: .regular))?.tinted(palette.secondary)
         var x = rect.minX + 4
         if let symbol {

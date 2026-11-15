@@ -138,7 +138,7 @@ struct HomeView: View {
 
     private func sectionBody<Content: View>(_ title: String, systemImage: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: Space.xl) {
-            Label(title, systemImage: systemImage)
+            Label(title, icon: systemImage)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(secondary)
                 .labelStyle(SectionLabelStyle())
@@ -294,7 +294,7 @@ private struct QuickAction: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: Space.s) {
-                Image(systemName: systemImage)
+                Image(icon: systemImage)
                     .imageScale(.small)
                 Text(title)
                 Text(shortcut)
@@ -335,8 +335,7 @@ private struct NoteCard: View {
                 ZStack(alignment: .bottomLeading) {
                     CoverBand(cover: cover, library: library, palette: palette, seed: note.displayTitle,
                               size: CGSize(width: Self.width, height: Self.band))
-                    Image(systemName: icon ?? NoteIcon.default)
-                        .symbolVariant(.fill)
+                    IconGlyph(icon ?? NoteIcon.default)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Color(nsColor: palette.glyph ?? palette.secondary))
                         .frame(width: 30, height: 30)
@@ -501,7 +500,7 @@ private struct ScratchpadCard: View {
 
             Button(action: newEntry) {
                 VStack(spacing: Space.s) {
-                    Image(systemName: "plus")
+                    Image(icon: "plus")
                         .font(.system(size: 16, weight: .medium))
                     Text("New Entry")
                         .font(.system(size: 12, weight: .medium))
@@ -527,8 +526,7 @@ private struct FolderTile: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: Space.l) {
-                Image(systemName: icon)
-                    .symbolVariant(.fill)
+                IconGlyph(icon)
                     .font(.system(size: 15))
                     .foregroundStyle(Color(nsColor: palette.tint).opacity(0.85))
                     .frame(width: 22)

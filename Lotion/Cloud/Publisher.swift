@@ -226,13 +226,20 @@ enum Publisher {
         return String(format: "#%02X%02X%02X", channels[0], channels[1], channels[2])
     }
 
-    /// The note's SF Symbol, drawn as a PNG for the page: web browsers can't
-    /// draw SF Symbols themselves.
+    /// The note's icon, drawn as a PNG for the page: web browsers can't
+    /// draw symbols themselves.
     private static func iconPNG(symbol: String, color: NSColor) -> Data? {
         let configuration = NSImage.SymbolConfiguration(pointSize: 128, weight: .regular)
             .applying(NSImage.SymbolConfiguration(paletteColors: [color]))
-        guard let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?
-            .withSymbolConfiguration(configuration) else { return nil }
+        let image: NSImage
+        if let (catalog, name) = IconCatalog.resolve(symbol) {
+            guard let drawn = catalog.image(name, size: 128, color: color) else { return nil }
+            image = drawn
+        } else {
+            guard let symbolImage = NSImage(icon: symbol, accessibilityDescription: nil)?
+                .withSymbolConfiguration(configuration) else { return nil }
+            image = symbolImage
+        }
         let side = 192
         guard let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: side, pixelsHigh: side, bitsPerSample: 8,
                                             samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,

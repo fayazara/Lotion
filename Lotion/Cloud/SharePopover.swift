@@ -25,7 +25,7 @@ struct ShareButton: View {
     var body: some View {
         let isPublished = library.publication(for: note) != nil
         Button { isPresented.toggle() } label: {
-            Label("Share", systemImage: isPublished ? "globe" : "square.and.arrow.up")
+            Label("Share", icon: isPublished ? "globe" : "square.and.arrow.up")
         }
         .help(isPublished ? "Published to the web" : "Publish to the web")
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
@@ -173,7 +173,7 @@ struct SharePopover: View {
 
                 Button { SettingsWindowController.show(pane: .cloud) } label: {
                     ActionRow(systemImage: "gearshape", title: "Manage published notes") {
-                        Image(systemName: "chevron.right")
+                        Image(icon: "chevron.right")
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(Palette.tertiaryLabel)
                     }
@@ -332,14 +332,14 @@ private struct LinkField: View {
     var body: some View {
         Button(action: copy) {
             HStack(spacing: Space.s) {
-                Image(systemName: "globe")
+                Image(icon: "globe")
                     .foregroundStyle(Palette.secondaryLabel)
                 (Text(url.host() ?? url.absoluteString).foregroundStyle(Palette.label)
                     + Text(url.path()).foregroundStyle(Palette.secondaryLabel))
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Spacer(minLength: Space.m)
-                Image(systemName: didCopy ? "checkmark" : "doc.on.doc")
+                Image(icon: didCopy ? "checkmark" : "doc.on.doc")
                     .foregroundStyle(didCopy ? AnyShapeStyle(.green) : AnyShapeStyle(Palette.secondaryLabel))
                     .contentTransition(.symbolEffect(.replace))
                     .frame(width: 16)
@@ -369,7 +369,7 @@ private struct ActionRow<Trailing: View>: View {
 
     var body: some View {
         HStack(spacing: Space.m) {
-            Image(systemName: systemImage)
+            Image(icon: systemImage)
                 .foregroundStyle(Palette.secondaryLabel)
                 .frame(width: 18)
             Text(title)
@@ -415,7 +415,7 @@ private struct Footnote: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: Space.s) {
-            Image(systemName: systemImage)
+            Image(icon: systemImage)
             Text(text)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -430,7 +430,7 @@ private struct FeedbackBanner: View {
     var body: some View {
         let tint: Color = feedback.isError ? .orange : .green
         HStack(alignment: .firstTextBaseline, spacing: Space.s) {
-            Image(systemName: feedback.isError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+            Image(icon: feedback.isError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
                 .foregroundStyle(tint)
             Text(feedback.text)
                 .foregroundStyle(Palette.label)
@@ -466,7 +466,7 @@ private struct PagePreview: View {
                 }
                 Spacer(minLength: Space.s)
                 HStack(spacing: 3) {
-                    Image(systemName: "lock.fill").font(.system(size: 7))
+                    Image(icon: "lock.fill").font(.system(size: 7))
                     Text(address).lineLimit(1).truncationMode(.middle)
                 }
                 .font(.system(size: 10))
@@ -493,7 +493,7 @@ private struct PagePreview: View {
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     if let symbol = library.icon(for: note) {
-                        Image(systemName: symbol)
+                        IconGlyph(symbol)
                             .font(.system(size: 22))
                             .foregroundStyle(Color(nsColor: palette.accent))
                             .padding(.top, cover == nil ? 0 : -22)

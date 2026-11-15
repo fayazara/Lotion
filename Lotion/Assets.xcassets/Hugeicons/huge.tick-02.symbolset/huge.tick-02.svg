@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="3300" height="2200">
+ <!--glyph: "", point size: 100.0, template writer version: "101". Icon from Hugeicons (MIT), https://hugeicons.com -->
+ <g id="Notes">
+  <rect height="2200" id="artboard" style="fill:white;opacity:1" width="3300" x="0" y="0"/>
+ </g>
+ <g id="Guides">
+  <g id="H-reference" style="fill:#27AAE1;stroke:none;" transform="matrix(1 0 0 1 339 696)"></g>
+  <line id="Baseline-S" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="696" y2="696"/>
+  <line id="Capline-S" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="625.541" y2="625.541"/>
+  <g id="H-reference" style="fill:#27AAE1;stroke:none;" transform="matrix(1 0 0 1 339 1126)"></g>
+  <line id="Baseline-M" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1126" y2="1126"/>
+  <line id="Capline-M" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1055.54" y2="1055.54"/>
+  <g id="H-reference" style="fill:#27AAE1;stroke:none;" transform="matrix(1 0 0 1 339 1556)"></g>
+  <line id="Baseline-L" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1556" y2="1556"/>
+  <line id="Capline-L" style="fill:none;stroke:#27AAE1;opacity:1;stroke-width:0.5;" x1="263" x2="3036" y1="1485.54" y2="1485.54"/>
+  <line id="left-margin-Regular-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1401.84" x2="1401.84" y1="600.79" y2="720.12"/>
+  <line id="right-margin-Regular-S" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1488.283" x2="1488.283" y1="600.79" y2="720.12"/>
+  <line id="left-margin-Regular-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1401.84" x2="1401.84" y1="1030.79" y2="1150.12"/>
+  <line id="right-margin-Regular-M" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1512.24" x2="1512.24" y1="1030.79" y2="1150.12"/>
+  <line id="left-margin-Regular-L" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1401.84" x2="1401.84" y1="1460.79" y2="1580.12"/>
+  <line id="right-margin-Regular-L" style="fill:none;stroke:#00AEEF;stroke-width:0.5;opacity:1.0;" x1="1544.256" x2="1544.256" y1="1460.79" y2="1580.12"/>
+ </g>
+ <g id="Symbols">
+  <g id="Regular-S" transform="matrix(1 0 0 1 1401.84 696)">
+   <path d="M70.61 -57.319C71.869 -56.117 71.916 -54.122 70.714 -52.863L32.895 -13.244C32.284 -12.604 31.47 -12.278 30.652 -12.268C29.834 -12.259 29.012 -12.566 28.387 -13.191L15.78 -25.797C14.55 -27.028 14.55 -29.024 15.78 -30.254C16.396 -30.87 17.202 -31.177 18.009 -31.177C18.816 -31.177 19.622 -30.87 20.238 -30.254L30.563 -19.929L66.154 -57.215C66.755 -57.845 67.555 -58.171 68.361 -58.19C69.167 -58.209 69.981 -57.92 70.61 -57.319Z"/>
+  </g>
+  <g id="Regular-M" transform="matrix(1 0 0 1 1401.84 1126)">
+   <path d="M90.179 -63.441C91.787 -61.906 91.846 -59.358 90.312 -57.75L42.012 -7.15C41.231 -6.333 40.191 -5.917 39.147 -5.905C38.102 -5.893 37.053 -6.285 36.254 -7.083L20.154 -23.183C18.582 -24.755 18.582 -27.304 20.154 -28.876C20.94 -29.662 21.97 -30.054 23 -30.055C24.03 -30.054 25.06 -29.662 25.846 -28.876L39.033 -15.689L84.488 -63.309C85.256 -64.113 86.277 -64.529 87.306 -64.553C88.336 -64.577 89.375 -64.208 90.179 -63.441Z"/>
+  </g>
+  <g id="Regular-L" transform="matrix(1 0 0 1 1401.84 1556)">
+   <path d="M116.331 -71.622C118.405 -69.642 118.482 -66.356 116.502 -64.281L54.195 0.993C53.189 2.047 51.847 2.584 50.499 2.599C49.152 2.615 47.798 2.11 46.768 1.079L25.999 -19.69C23.971 -21.718 23.971 -25.005 25.999 -27.033C27.012 -28.047 28.341 -28.554 29.67 -28.554C30.999 -28.554 32.328 -28.047 33.341 -27.033L50.353 -10.022L108.99 -71.452C109.98 -72.489 111.297 -73.026 112.625 -73.057C113.954 -73.088 115.294 -72.612 116.331 -71.622Z"/>
+  </g>
+ </g>
+</svg>

@@ -343,7 +343,7 @@ final class TextBlockView: BlockView {
                 let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: style.color]
                 let titleSize = (style.title as NSString).size(withAttributes: attributes)
                 var x = leadingInset
-                if let symbol = NSImage(systemSymbolName: style.symbol, accessibilityDescription: style.title)?
+                if let symbol = NSImage(icon: style.symbol, accessibilityDescription: style.title)?
                     .withSymbolConfiguration(.init(pointSize: theme.body.pointSize - 1, weight: .semibold)) {
                     let icon = symbol.tinted(style.color)
                     icon.draw(in: NSRect(x: x, y: mid - icon.size.height / 2, width: icon.size.width, height: icon.size.height),

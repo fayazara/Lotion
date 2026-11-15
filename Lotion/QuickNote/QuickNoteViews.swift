@@ -119,7 +119,7 @@ struct EntryBrowser: View {
                         .lineLimit(1)
                     Spacer(minLength: 8)
                     if entry.id == model.currentID {
-                        Image(systemName: "pencil")
+                        Image(icon: "pencil")
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(.secondary)
                     }

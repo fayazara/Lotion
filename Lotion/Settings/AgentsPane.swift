@@ -72,7 +72,7 @@ struct AgentsPane: View {
                                 copy(setup)
                             } label: {
                                 Label(copied == setup ? "Copied" : "Copy",
-                                      systemImage: copied == setup ? "checkmark" : "doc.on.doc")
+                                      icon: copied == setup ? "checkmark" : "doc.on.doc")
                                     .contentTransition(.symbolEffect(.replace))
                             }
                         } label: {

@@ -216,7 +216,7 @@ struct QuickAddView: View {
             QuickAddTargetMenu(model: model, colors: colors)
             Spacer(minLength: 12)
             if let added = model.lastAdded, model.text.isEmpty {
-                Label("Added to \(added)", systemImage: "checkmark")
+                Label("Added to \(added)", icon: "checkmark")
                     .labelStyle(CompactLabelStyle())
                     .font(.system(size: 12))
                     .foregroundStyle(colors.secondary)
@@ -270,7 +270,7 @@ private struct PillMenu: View {
         for choice in choices {
             guard let choice else { menu.addItem(.separator()); continue }
             let item = ClosureMenuItem(title: choice.title, action: choice.action)
-            item.image = NSImage(systemSymbolName: choice.symbol, accessibilityDescription: nil)
+            item.image = NSImage(icon: choice.symbol, accessibilityDescription: nil)
             menu.addItem(item)
         }
         guard let window = NSApp.keyWindow, let view = window.contentView else { return }
@@ -301,7 +301,7 @@ private struct QuickAddPillLabel: View {
 
     var body: some View {
         HStack(spacing: 5) {
-            Image(systemName: symbol)
+            Image(icon: symbol)
                 .font(.system(size: 11, weight: .medium))
             Text(title)
                 .font(.system(size: 12.5, weight: .medium))
@@ -364,19 +364,19 @@ private struct QuickAddTargetMenu: View {
 
     var body: some View {
         Menu {
-            Button(TaskIndex.inboxTitle, systemImage: "tray") { model.target = nil }
+            Button(TaskIndex.inboxTitle, icon: "tray") { model.target = nil }
             Divider()
             ForEach(notes) { note in
                 Button(note.displayTitle) { model.target = note.id }
             }
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: current == nil ? "tray" : "doc.text")
+                Image(icon: current == nil ? "tray" : "doc.text")
                     .font(.system(size: 11, weight: .medium))
                 Text(current?.displayTitle ?? TaskIndex.inboxTitle)
                     .font(.system(size: 12.5, weight: .medium))
                     .lineLimit(1)
-                Image(systemName: "chevron.down")
+                Image(icon: "chevron.down")
                     .font(.system(size: 8, weight: .bold))
                     .opacity(0.6)
             }
