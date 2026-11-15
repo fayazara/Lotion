@@ -141,8 +141,14 @@ struct HomeView: View {
             Label {
                 Text(title)
             } icon: {
-                // Today shows the date, as it does in the sidebar.
-                if systemImage == TodayGlyph.symbol { TodayGlyph() } else { Image(icon: systemImage) }
+                // Today shows the date, as it does in the sidebar. It keeps
+                // its full size: shrunk like the other icons, the date is
+                // too small to read.
+                if systemImage == TodayGlyph.symbol {
+                    TodayGlyph().imageScale(.large)
+                } else {
+                    Image(icon: systemImage)
+                }
             }
             .uiFont(.system(size: 12, weight: .semibold))
             .foregroundStyle(secondary)
