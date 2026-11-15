@@ -47,6 +47,12 @@ enum SelfTest {
     private static func snap(_ name: String, _ window: NSWindow?) async {
         await wait(0.3)
         log("SNAP \(name)")
+        // `-LotionSelfTestHold <name>` holds that screen for a real capture of
+        // the window, which shows controls a snap can't draw.
+        if let window, UserDefaults.standard.string(forKey: "LotionSelfTestHold") == name {
+            log("WINDOW \(window.windowNumber)")
+            await wait(3)
+        }
         guard let window, let dir = UserDefaults.standard.string(forKey: "LotionSnapDir"), let view = window.contentView,
               let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
         view.cacheDisplay(in: view.bounds, to: rep)
@@ -128,6 +134,23 @@ enum SelfTest {
         if state.selectedNote == nil, let first = state.library.notes.first {
             state.selection = first.id
             await wait(0.8)
+        }
+        if UserDefaults.standard.string(forKey: "LotionSelfTestOnly") == "sidebar" {
+            // Holds the window still for a capture of the sidebar, which snaps can't draw.
+            state.show(.today)
+            if let folder = state.library.folders.first { state.expandedFolders.insert(folder) }
+            await wait(1.5)
+            if let window = NSApp.windows.first(where: { $0.canBecomeMain && $0.isVisible }) {
+                log("WINDOW \(window.windowNumber)")
+            }
+            await wait(6)
+            log("DONE all passed")
+            return
+        }
+        if UserDefaults.standard.string(forKey: "LotionSelfTestOnly") == "tasks" {
+            await tasks(state)
+            log(failures == 0 ? "DONE all passed" : "DONE \(failures) failed")
+            return
         }
         if UserDefaults.standard.string(forKey: "LotionSelfTestOnly") == "documents" {
             await documents(state)
@@ -2126,6 +2149,165 @@ enum SelfTest {
         check(paneEditor.markdown() == typedBefore, "closing with the button takes back the / it typed", paneEditor.markdown())
         state.library.saveAll()
         quick.hide()
+    }
+
+    // MARK: Tasks
+
+    private static func tasks(_ state: AppState) async {
+        let library = state.library
+        let index = library.tasks
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        func day(_ offset: Int) -> String { TaskDates.isoString(calendar.date(byAdding: .day, value: offset, to: today)!) }
+        let window = NSApp.windows.first { $0.canBecomeMain && $0.isVisible }
+
+        guard let note = library.createNote(in: nil) else { check(false, "a task note is made"); return }
+        library.updateFromOtherEditor(note, text: """
+        # Errands
+
+        - [ ] Call the bank !1 @\(day(-2))
+        - [ ] Send Sam the mockups #design @\(day(0)) 10:00 ~45m
+        - [ ] Water the plants @\(day(0)) @every week
+        - [x] Post the parcel @\(day(0))
+        - [ ] Book the dentist @\(day(3)) #health
+        - [ ] Someday, learn the cello
+
+        ```
+        - [ ] not a task, it's code
+        ```
+        """)
+        library.save(note)
+        await wait(0.3)
+
+        let mine = index.tasks(in: note)
+        check(mine.count == 6, "a note's checklist lines are its tasks", "\(mine.count)")
+        let t = index.today()
+        check(t.overdue.contains { $0.title == "Call the bank" }, "an earlier date is overdue")
+        check(t.today.map(\.title).contains("Send Sam the mockups") && t.today.map(\.title).contains("Water the plants"), "today's tasks are in Today")
+        check(t.done.contains { $0.title == "Post the parcel" }, "today's done tasks are kept apart")
+        check(!t.today.contains { $0.title == "Book the dentist" }, "later tasks aren't in Today")
+        if let sam = mine.first(where: { $0.title == "Send Sam the mockups" }) {
+            check(sam.minutes == 600 && sam.duration == 45 && sam.tags == ["design"], "time, duration and tags are read")
+        }
+
+        state.show(.today)
+        await wait(1.0)
+        await snap("tasks-01-today", window)
+        state.show(.upcoming)
+        await wait(0.8)
+        await snap("tasks-02-upcoming", window)
+
+        // Ticking a repeating task writes its next one.
+        if let plants = index.tasks(in: note).first(where: { $0.title == "Water the plants" }) {
+            index.setChecked(plants, true)
+            let next = "- [ ] Water the plants @\(day(7)) @every week"
+            check(note.text.contains(next) && note.text.contains("- [x] Water the plants @\(day(0)) @every week"),
+                  "a repeating task comes back on its next day", note.text)
+        }
+        if let bank = index.tasks(in: note).first(where: { $0.title == "Call the bank" }) {
+            index.move(bank, to: calendar.date(byAdding: .day, value: 1, to: today)!)
+            check(note.text.contains("- [ ] Call the bank !1 @\(day(1))"), "rescheduling rewrites the date in place", note.text)
+        }
+        if let cello = index.tasks(in: note).first(where: { $0.title.hasPrefix("Someday") }) {
+            index.setDue(cello, today, minutes: 14 * 60 + 30)
+            check(note.text.contains("- [ ] Someday, learn the cello @\(day(0)) 14:30"), "a time is written after the task", note.text)
+            if let timed = index.tasks(in: note).first(where: { $0.title.hasPrefix("Someday") }) {
+                index.setPriority(timed, 2)
+                check(note.text.contains("- [ ] Someday, learn the cello @\(day(0)) 14:30 !2"), "priority is added", note.text)
+                if let prioritized = index.tasks(in: note).first(where: { $0.title.hasPrefix("Someday") }) {
+                    index.setPriority(prioritized, 1)
+                    check(note.text.contains("- [ ] Someday, learn the cello @\(day(0)) 14:30 !1"), "priority changes in place", note.text)
+                }
+            }
+        }
+        check(!note.isDirty, "task changes are saved")
+
+        // Quick add, to the inbox.
+        let draft = TaskDraft.parse("Pick up the dry cleaning tomorrow 6pm #errands p2")
+        let added = index.add(draft)
+        let inbox = index.inbox(create: false)
+        check(inbox != nil && added != nil, "quick add makes the inbox note", "\(String(describing: inbox?.url.path))")
+        check(inbox?.text.contains("- [ ] Pick up the dry cleaning #errands !2 @\(day(1)) 18:00") == true, "quick add writes plain Markdown", inbox?.text ?? "")
+        check(index.inboxTasks().isEmpty == false, "the inbox lists its tasks")
+
+        library.updateFromOtherEditor(inbox!, text: inbox!.text + "- [ ] Call my brother #p1 @\(day(0))\n")
+        library.save(inbox!)
+        check(index.tasks(in: inbox!).last?.priority == 1 && index.tasks(in: inbox!).last?.tags == [], "#p1 is read as priority 1")
+        TaskQuickAddField.openForTesting = "Call Sam tomorrow 3pm #work p1"
+        state.show(.inbox)
+        await wait(0.8)
+        await snap("tasks-03-inbox", window)
+
+        QuickAddController.shared.show()
+        await wait(0.6)
+        if let panel = NSApp.windows.first(where: { $0 is QuickAddPanel }) {
+            await snap("tasks-04a-quickadd-empty", panel)
+        }
+        QuickAddController.shared.model.text = "Draft the newsletter next friday at 9am #writing p1 every week"
+        await wait(0.6)
+        if let panel = NSApp.windows.first(where: { $0 is QuickAddPanel }) {
+            await snap("tasks-04-quickadd", panel)
+        }
+        QuickAddController.shared.add(keepOpen: false)
+        check(inbox?.text.contains("Draft the newsletter #writing !1 @") == true, "the quick add pane adds to the inbox", inbox?.text ?? "")
+        check(QuickAddController.shared.isVisible == false, "return puts the pane away")
+
+        state.show(.home)
+        await wait(0.8)
+        await snap("tasks-05-home", window)
+
+        // In the editor: dates in words become dates, and [tasks] lists them.
+        state.selection = note.id
+        await wait(0.8)
+        guard let editor = state.editor.editor, let last = editor.blocks.last(where: { $0.kind == .todo }) else {
+            check(false, "the task note opens in the editor")
+            return
+        }
+        editor.focus(last.id, .end)
+        key(editor, #selector(NSResponder.insertNewline(_:)))
+        type(editor, "Pay the rent @fri 3pm ")
+        let friday = TaskDates.isoString(TaskDates.phrase(["fri"], from: .now)!.day!)
+        check(editor.blocks.contains { $0.kind == .todo && $0.text.string == "Pay the rent @\(friday) 15:00 " },
+              "a date in words becomes a date as you type", editor.blocks.filter { $0.kind == .todo }.map(\.text.string).joined(separator: " | "))
+        type(editor, "@tomorrow ")
+        check(note.text.contains("- [ ] Pay the rent @\(friday) 15:00 @\(day(1))"), "the next date is written too", note.text)
+        type(editor, "@sam ")
+        check(note.text.contains("@\(day(1)) @sam"), "a mention is left alone", note.text)
+        library.save(note)
+
+        library.updateFromOtherEditor(note, text: note.text + "\n\n## Due soon\n\n[tasks here due:week]\n")
+        await wait(0.8)
+        let list = editor.views.compactMap { $0 as? TasksBlockView }.first
+        check(list != nil, "[tasks] shows a task list")
+        check(editor.markdown().contains("[tasks here due:week]"), "a task list writes back as written")
+        if let list {
+            center(editor, list.frame)
+            await snap("tasks-06-block", window)
+            let before = index.run(TaskQuery("here due:week"), here: note).count
+            if let first = index.run(TaskQuery("here due:week"), here: note).first {
+                editor.taskToggle?(first)
+                await wait(0.5)
+                check(index.run(TaskQuery("here due:week"), here: note).count == before - 1, "ticking in the list ticks the task")
+            }
+        }
+        let query = TaskQuery("#design folder:\"Side projects\" due:today !2 done mockups")
+        check(query.tags == ["design"] && query.folder == "Side projects" && query.when == .today && query.priority == 2 && query.includeDone && query.text == "mockups",
+              "a task filter reads all its parts", query.source)
+        check(TaskQuery(query.source) == query, "a task filter writes back the same")
+
+        // The agent tools.
+        func text(_ result: [JSONValue]) -> String { result.first?["text"]?.stringValue ?? "" }
+        do {
+            let listed = text(try await AgentTools.call("list_tasks", arguments: AgentArguments(raw: ["due": "today"])))
+            check(listed.contains("Write release notes") && !listed.contains("Book the dentist"), "list_tasks lists today's tasks", listed)
+            let added = text(try await AgentTools.call("add_task", arguments: AgentArguments(raw: ["text": "Renew the passport next month p2 #admin", "note": .string(note.id.uuidString)])))
+            check(note.text.contains("- [ ] Renew the passport #admin !2 @"), "add_task writes the task in its note", note.text)
+            let id = (try? JSONDecoder().decode([String: JSONValue].self, from: Data(added.utf8)))?["id"]?.stringValue ?? ""
+            let updated = text(try await AgentTools.call("update_task", arguments: AgentArguments(raw: ["id": .string(id), "done": true, "priority": 1])))
+            check(note.text.contains("- [x] Renew the passport #admin !1 @"), "update_task checks it off and changes priority", updated + "\n" + note.text)
+        } catch {
+            check(false, "the task tools run", error.localizedDescription)
+        }
     }
 
     // MARK: Performance

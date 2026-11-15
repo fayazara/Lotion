@@ -72,6 +72,7 @@ struct QuickNotePane: View {
 /// Click, then press the new shortcut. Esc cancels; Delete clears it.
 struct ShortcutRecorder: View {
     @Binding var shortcut: KeyShortcut?
+    var slot: HotKeySlot = .quickNote
     @State private var isRecording = false
     @State private var monitor: Any?
 
@@ -89,7 +90,7 @@ struct ShortcutRecorder: View {
             if shortcut != nil, !isRecording {
                 Button {
                     shortcut = nil
-                    KeyShortcut.quickNote = nil
+                    slot.shortcut = nil
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                 }
@@ -97,10 +98,10 @@ struct ShortcutRecorder: View {
                 .foregroundStyle(.secondary)
                 .help("Clear Shortcut")
             }
-            if shortcut != KeyShortcut.quickNoteDefault, !isRecording {
+            if shortcut != slot.defaultShortcut, !isRecording {
                 Button("Reset") {
-                    shortcut = KeyShortcut.quickNoteDefault
-                    KeyShortcut.quickNote = shortcut
+                    shortcut = slot.defaultShortcut
+                    slot.shortcut = shortcut
                 }
                 .buttonStyle(.link)
                 .font(.caption)
@@ -111,7 +112,7 @@ struct ShortcutRecorder: View {
 
     private func start() {
         isRecording = true
-        GlobalHotKey.quickNote.isSuspended = true
+        slot.hotKey.isSuspended = true
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             let bare = event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty
             let keyCode = event.keyCode
@@ -125,7 +126,7 @@ struct ShortcutRecorder: View {
         if bare, keyCode == 53 { stop(); return }
         if bare, keyCode == 51 || keyCode == 117 {
             shortcut = nil
-            KeyShortcut.quickNote = nil
+            slot.shortcut = nil
             stop()
             return
         }
@@ -134,7 +135,7 @@ struct ShortcutRecorder: View {
             return
         }
         shortcut = recorded
-        KeyShortcut.quickNote = recorded
+        slot.shortcut = recorded
         stop()
     }
 
@@ -142,6 +143,6 @@ struct ShortcutRecorder: View {
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
         isRecording = false
-        GlobalHotKey.quickNote.isSuspended = false
+        slot.hotKey.isSuspended = false
     }
 }

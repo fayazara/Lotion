@@ -76,6 +76,15 @@ enum AgentTools {
     files beside the note (add them with add_attachment), a link alone on a line (shown as a \
     card or embed), `![[Other note]]` to embed another note, and `[TOC]`.
 
+    Tasks are checklist lines in any note, with plain-text metadata after the words: \
+    `- [ ] Send the mockups #design !1 @2026-11-16 10:00 ~45m @every week` — `@YYYY-MM-DD` \
+    (optionally followed by HH:MM) is when it's due, `!1`–`!3` its priority (1 highest), `#tag` \
+    a tag, `~45m` how long it takes, `@every day|week|month|year|weekday|monday` how it repeats. \
+    Lotion's Today and Upcoming lists gather tasks from every note by date; Inbox is a note \
+    titled “Inbox”. Use list_tasks, add_task and update_task rather than editing these lines by \
+    hand: they write the syntax for you and check off repeating tasks properly. `[tasks …]` on its \
+    own line shows a live list of tasks in a note (e.g. `[tasks #work due:week]`).
+
     Deleting moves notes and folders to the macOS Trash. Publishing (publish_note) puts a note \
     on the public web through the user's own Lotion Share worker on Cloudflare; only do it when \
     the user asks. Check cloud_status first: publishing needs a connected worker.
@@ -83,6 +92,50 @@ enum AgentTools {
 
     static var definitions: [JSONValue] {
         [
+            // MARK: Tasks
+            tool(
+                "list_tasks",
+                title: "List tasks",
+                description: "Lists tasks (checklist lines) from every note, open ones first, by due date, time and priority. Each has an id for update_task, its title, due date and time, priority, tags, repeat rule, its line of Markdown and the note it's in. Ids last until lines above the task change.",
+                properties: [
+                    "due": ["type": "string", "enum": .array(TaskQuery.When.allCases.map { .string($0.rawValue) }),
+                            "description": "today = due today or overdue; week = due in the next 7 days or overdue; upcoming = due after today; dated / undated; any (the default)."],
+                    "tag": ["type": "string", "description": "Only tasks with this tag."],
+                    "folder": ["type": "string", "description": "Only tasks in notes in this folder (\"\" for notes outside any folder)."],
+                    "note": ["type": "string", "description": "Only tasks in this note (id, path, title or \"scratchpad\")."],
+                    "filter": ["type": "string", "description": "A filter written as in a [tasks] block, e.g. \"#work due:week !2 mockups\". Combined with the other arguments."],
+                    "include_done": ["type": "boolean", "description": "Include checked-off tasks. Defaults to false."],
+                    "limit": ["type": "integer", "description": "Most to return. Defaults to 100."],
+                ],
+                readOnly: true
+            ),
+            tool(
+                "add_task",
+                title: "Add task",
+                description: "Adds a task from plain words, the way Quick Add does: \"Call mum tomorrow 6pm #home p1\", \"Pay rent every month on the 1st\". Dates, times, repeats (every …), #tags, p1–p3 and durations (for 30m) are taken out of the words and written as metadata. Goes to the end of the note's tasks, or to the Inbox note. Returns the task.",
+                properties: [
+                    "text": ["type": "string", "description": "The task in plain words."],
+                    "note": ["type": "string", "description": "The note to add it to. Omit for the Inbox note (made if needed)."],
+                    "due": ["type": "string", "description": "A due date that overrides any in the text: YYYY-MM-DD or words like \"next friday 3pm\"."],
+                    "priority": ["type": "integer", "description": "1 (highest) to 3; 0 for none."],
+                ],
+                required: ["text"]
+            ),
+            tool(
+                "update_task",
+                title: "Update task",
+                description: "Checks a task off (or on), reschedules it, or changes its priority, rewriting only its metadata. Checking off a repeating task writes its next one, due on its next date, above it; both are returned.",
+                properties: [
+                    "id": ["type": "string", "description": "The task's id from list_tasks or add_task."],
+                    "done": ["type": "boolean"],
+                    "due": ["type": "string", "description": "YYYY-MM-DD, words like \"tomorrow\", or \"\" to remove the date."],
+                    "time": ["type": "string", "description": "HH:MM (24-hour), or \"\" to remove the time."],
+                    "priority": ["type": "integer", "description": "1 (highest) to 3; 0 for none."],
+                ],
+                required: ["id"],
+                idempotent: true
+            ),
+
             // MARK: Library
             tool(
                 "get_library",
@@ -407,6 +460,9 @@ enum AgentTools {
     static func call(_ name: String, arguments: AgentArguments) async throws -> [JSONValue] {
         let handlers = try AgentHandlers()
         switch name {
+        case "list_tasks": return try handlers.listTasks(arguments)
+        case "add_task": return try handlers.addTask(arguments)
+        case "update_task": return try handlers.updateTask(arguments)
         case "get_library": return try handlers.getLibrary()
         case "list_notes": return try handlers.listNotes(arguments)
         case "search_notes": return try handlers.searchNotes(arguments)

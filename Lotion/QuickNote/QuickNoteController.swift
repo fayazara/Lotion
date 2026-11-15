@@ -565,6 +565,14 @@ final class QuickNoteController: NSObject, NSWindowDelegate, NSToolbarDelegate {
         editor.noteNames = { [weak self] in
             (self?.state?.library.notes ?? []).filter { !$0.isScratchpad && !$0.title.isEmpty }.map(\.title).sorted()
         }
+        if let library = state?.library {
+            editor.connectTasks(to: library, note: { [weak self] in self?.scratchpad }) { [weak self] task in
+                guard let state = self?.state else { return }
+                state.showMainWindow()
+                NSApp.activate()
+                state.open(task)
+            }
+        }
     }
 
     private func observeChanges() {

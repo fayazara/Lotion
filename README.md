@@ -18,6 +18,11 @@ https://github.com/user-attachments/assets/1491deae-30f4-4640-a196-278edd8c6d8e
 - **Rich embeds.** Links become cards; YouTube, Spotify, Figma, posts, maps,
   PDFs, audio and files embed inline.
 - **Covers and icons** for notes, with Unsplash search.
+- **Tasks in your notes.** Any checklist line is a task. Give it a date and it
+  shows up in **Today**, **Upcoming** and a live `[tasks]` list, without ever
+  leaving the note it was written in. See [Tasks](#tasks).
+- **Quick Add** from any app (⌃⌥T): “Call mum tomorrow 6pm #home p1” becomes a
+  task in your Inbox.
 - **A scratchpad** for half-formed thoughts, at the top of the sidebar.
 - **Themes** — Lotion's own, plus dozens made from popular VS Code themes.
 - **Publish to the web** on your own Cloudflare account, with
@@ -27,6 +32,40 @@ https://github.com/user-attachments/assets/1491deae-30f4-4640-a196-278edd8c6d8e
 
 No accounts, no sync service, no database. To sync, put your notes folder in
 iCloud Drive, Dropbox or a git repo.
+
+## Tasks
+
+A task is a checklist line in any note. A little plain text after its words
+says when it's due and how important it is, so the file still reads well in
+any Markdown app:
+
+```markdown
+- [ ] Send Sam the revised mockups #design !1 @2026-11-16 10:00 ~45m
+- [ ] Water the plants @2026-11-15 @every week
+```
+
+| Write | Means |
+| --- | --- |
+| `@tomorrow`, `@fri 3pm`, `@next week`, `@nov 20` | Due then. Turned into a date (`@2026-11-16`) as you type, so the file reads the same next week. |
+| `@every week`, `@every monday`, `@every 2 months` | Repeats. Checking it off writes the next one above it. |
+| `!1` `!2` `!3` | Priority, 1 highest. |
+| `#tag` | A tag to filter by. |
+| `~45m`, `~1h30m` | How long it takes. |
+
+Lotion also reads [Obsidian Tasks](https://publish.obsidian.md/tasks/) emoji
+(`📅 2026-11-16`, `🔁 every week`, `⏫`), so a vault shared with Obsidian keeps
+its dates.
+
+- **Today** (⌘1) lists what's overdue and due today.
+- **Upcoming** (⌘2) shows the next two weeks by day. Drag a task onto a day to
+  move it.
+- **Inbox** (⌘3) is a note called “Inbox”. Quick Add writes there unless you
+  pick another note.
+- **`[tasks …]`** on a line of its own (or `/Task List`) shows a live list in
+  any note: `[tasks #work due:week]`, `[tasks here]`, `[tasks folder:Home !1]`.
+
+Nothing is stored apart from the Markdown: rescheduling or checking off a task
+from any list edits its line in its note.
 
 ## Publishing to the web
 
@@ -55,7 +94,9 @@ Lotion has a built-in MCP server, so coding agents like Claude Code and Codex
 can work with your notes: read, search, create, edit, move and delete them,
 organize folders, pin notes, set icons and covers, add attachments, write to
 the scratchpad, change settings, and publish or unpublish notes when Lotion
-Share is connected. Changes show up in the Lotion window as they happen.
+Share is connected. It can also list, add, reschedule and check off tasks
+(`list_tasks`, `add_task`, `update_task`). Changes show up in the Lotion
+window as they happen.
 
 Open **Settings → AI Agents** and copy the command for your agent, for example:
 

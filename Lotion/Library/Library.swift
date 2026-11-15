@@ -137,6 +137,8 @@ final class Library {
     var errorMessage: String?
 
     @ObservationIgnored private var saveTasks: [Note.ID: Task<Void, Never>] = [:]
+    /// Every task in the library, read from the notes' checklists.
+    @ObservationIgnored private(set) lazy var tasks = TaskIndex(library: self)
     /// The demo library keeps its own pins, apart from the real ones.
     private static var pinsKey: String { DemoLibrary.isEnabled ? DemoLibrary.pinsKey : "pinnedNotes" }
     private static let extensions: Set<String> = ["md", "markdown"]
@@ -533,6 +535,7 @@ final class Library {
             try? FileManager.default.setAttributes([.creationDate: note.created], ofItemAtPath: note.url.path)
             note.savedText = text
             note.modified = .now
+            NotificationCenter.default.post(name: .lotionTasksDidChange, object: note)
         } catch {
             errorMessage = "“\(note.displayTitle)” could not be saved. \(error.localizedDescription)"
             return

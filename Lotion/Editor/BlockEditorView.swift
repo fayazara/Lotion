@@ -29,6 +29,12 @@ final class BlockEditorView: NSView {
     var openNoteNamed: ((String) -> Void)?
     /// The names notes can be embedded by, for the slash menu.
     var noteNames: (() -> [String])?
+    /// For `[tasks]` blocks: the tasks a filter matches, the note a task is
+    /// in, ticking one, and opening its note. Set with `connectTasks`.
+    var taskQuery: ((String) -> [TaskItem])?
+    var taskNoteTitle: ((TaskItem) -> String?)?
+    var taskToggle: ((TaskItem) -> Void)?
+    var openTask: ((TaskItem) -> Void)?
     /// The note's folder, for images with relative paths.
     var baseURL: URL?
     /// Where remote images and videos are kept once fetched, so they load from disk after.
@@ -183,6 +189,7 @@ final class BlockEditorView: NSView {
         case .embed:
             switch block.info {
             case "toc": TocBlockView.self
+            case "tasks": TasksBlockView.self
             case "note": NoteEmbedBlockView.self
             case "file": FileBlockView.self
             default: EmbedBlockView.self
@@ -745,6 +752,7 @@ final class BlockEditorView: NSView {
     func changed() {
         onChange?()
         for case let toc as TocBlockView in views { toc.refresh() }
+        for case let list as TasksBlockView in views { list.refresh() }
         // Typing can rename a heading or an entry without changing any height.
         updateScrollSpyEntries()
     }
@@ -856,6 +864,18 @@ final class BlockEditorView: NSView {
     }
 
     /// Selects the first match of `query` in the note.
+    /// Focuses a to-do by its words, or by its place among the note's to-dos.
+    func revealTask(title: String, ordinal: Int?) {
+        let todos = blocks.filter { $0.kind == .todo }
+        let match = todos.first { TaskSyntax.metadata(in: $0.plainText).title == title }
+            ?? ordinal.flatMap { todos.indices.contains($0) ? todos[$0] : nil }
+        guard let block = match else { return }
+        focus(block.id, .end)
+        if let view = view(for: block.id) {
+            scrollToVisible(NSRect(x: view.frame.minX, y: max(0, view.frame.minY - 80), width: view.frame.width, height: min(visibleRect.height * 0.6, 300)))
+        }
+    }
+
     func revealMatch(_ query: String) {
         let options: String.CompareOptions = [.caseInsensitive, .diacriticInsensitive]
         for block in blocks {

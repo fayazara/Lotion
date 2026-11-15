@@ -398,6 +398,16 @@ nonisolated enum BlockMarkdown {
         /// note, a file, or a link alone on its line.
         static func embedLine(_ line: String) -> Block? {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
+            // `[tasks]` or `[tasks #work due:week]`: a live list of tasks.
+            if trimmed.count >= 7, trimmed.lowercased().hasPrefix("[tasks"), trimmed.hasSuffix("]"),
+               trimmed.count == 7 || trimmed.dropFirst(6).first == " " {
+                let query = trimmed.dropFirst(6).dropLast().trimmingCharacters(in: .whitespaces)
+                guard !query.contains("]"), !query.contains("[") else { return nil }
+                var block = Block(kind: .embed)
+                block.info = "tasks"
+                block.imageSource = query
+                return block
+            }
             if tocMarkers.contains(trimmed.lowercased()) {
                 var block = Block(kind: .embed)
                 block.info = "toc"
@@ -854,6 +864,7 @@ nonisolated enum BlockMarkdown {
         case .embed:
             switch block.info {
             case "toc": return prefix + "[TOC]"
+            case "tasks": return prefix + (block.imageSource.isEmpty ? "[tasks]" : "[tasks \(block.imageSource)]")
             case "note": return prefix + "![[\(block.imageSource)]]"
             case "file":
                 let target = block.imageSource.contains(" ") ? "<\(block.imageSource)>" : block.imageSource

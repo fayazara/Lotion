@@ -37,6 +37,7 @@ final class AppState {
         if DemoLibrary.isEnabled { Task { [library] in await DemoLibrary.fetchCovers(into: library) } }
         selection = Self.launchSelection(in: library)
         editor.openNote = { [weak self] id in self?.selection = id }
+        editor.openTask = { [weak self] task in self?.open(task) }
     }
 
     /// Whether the main window is on screen; closing it leaves Lotion running.
@@ -52,19 +53,54 @@ final class AppState {
 
     // MARK: Home
 
-    /// The sidebar's Home row. Home shows whenever no note is selected.
+    /// The sidebar's Home row. Home shows whenever no note or task list is selected.
     static let homeID = UUID()
+    /// The sidebar's rows for the task lists.
+    static let todayID = UUID()
+    static let upcomingID = UUID()
+    static let inboxID = UUID()
 
-    var isHomeShowing: Bool { selectedNote == nil }
+    /// What the window shows when it isn't a note.
+    enum Page: Equatable {
+        case home, today, upcoming, inbox
+    }
 
-    func showHome() {
+    var page: Page {
+        switch selection {
+        case Self.todayID: .today
+        case Self.upcomingID: .upcoming
+        case Self.inboxID: .inbox
+        default: .home
+        }
+    }
+
+    var isHomeShowing: Bool { selectedNote == nil && page == .home }
+
+    func showHome() { show(.home) }
+
+    func show(_ page: Page) {
         searchText = ""
-        selection = Self.homeID
+        selection = switch page {
+        case .home: Self.homeID
+        case .today: Self.todayID
+        case .upcoming: Self.upcomingID
+        case .inbox: Self.inboxID
+        }
+    }
+
+    /// Opens a task's note with the caret on its line.
+    func open(_ task: TaskItem) {
+        guard let note = library.tasks.note(of: task) else { return }
+        searchText = ""
+        if let folder = note.folder { expandedFolders.insert(folder) }
+        selection = note.id
+        editor.revealLine(task.line, in: note)
     }
 
     /// Home, or the note open when Lotion last quit, as Settings says.
     private static func launchSelection(in library: Library) -> Note.ID? {
         let preference = LaunchView(rawValue: UserDefaults.standard.string(forKey: Prefs.launchView) ?? "") ?? .home
+        if preference == .today { return todayID }
         guard preference == .lastNote else { return homeID }
         if let path = UserDefaults.standard.string(forKey: Prefs.lastNotePath) {
             let all = library.notes + [library.scratchpad].compactMap { $0 }

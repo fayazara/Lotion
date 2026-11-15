@@ -19,6 +19,7 @@ nonisolated struct KeyShortcut: Codable, Equatable, Sendable {
     var key: String
 
     static let quickNoteDefault = KeyShortcut(keyCode: UInt32(kVK_ANSI_N), modifiers: NSEvent.ModifierFlags([.control, .option]).rawValue, key: "N")
+    static let quickAddDefault = KeyShortcut(keyCode: UInt32(kVK_ANSI_T), modifiers: NSEvent.ModifierFlags([.control, .option]).rawValue, key: "T")
 
     var modifierFlags: NSEvent.ModifierFlags { NSEvent.ModifierFlags(rawValue: modifiers) }
 
@@ -86,30 +87,50 @@ nonisolated struct KeyShortcut: Codable, Equatable, Sendable {
     ]
 }
 
-@MainActor extension KeyShortcut {
-    private static let defaultsKey = "quickNoteShortcut"
+/// The shortcuts Lotion takes from every app.
+enum HotKeySlot {
+    /// Shows the quick note pane.
+    case quickNote
+    /// Shows the quick add task pane.
+    case quickAdd
 
-    /// The quick note shortcut: the default until one is recorded, nil once
-    /// it has been cleared.
-    static var quickNote: KeyShortcut? {
+    var defaultsKey: String { self == .quickNote ? "quickNoteShortcut" : "quickAddShortcut" }
+    var defaultShortcut: KeyShortcut { self == .quickNote ? .quickNoteDefault : .quickAddDefault }
+    @MainActor var hotKey: GlobalHotKey { self == .quickNote ? .quickNote : .quickAdd }
+
+    /// The default until one is recorded, nil once it has been cleared.
+    @MainActor var shortcut: KeyShortcut? {
         get {
-            guard let data = UserDefaults.standard.data(forKey: defaultsKey) else { return quickNoteDefault }
+            guard let data = UserDefaults.standard.data(forKey: defaultsKey) else { return defaultShortcut }
             return (try? JSONDecoder().decode(Stored.self, from: data))?.shortcut ?? nil
         }
-        set {
+        nonmutating set {
             if let data = try? JSONEncoder().encode(Stored(shortcut: newValue)) {
                 UserDefaults.standard.set(data, forKey: defaultsKey)
             }
-            GlobalHotKey.quickNote.register(newValue)
+            hotKey.register(newValue)
         }
     }
 
     private struct Stored: Codable { var shortcut: KeyShortcut? }
 }
 
+@MainActor extension KeyShortcut {
+    static var quickNote: KeyShortcut? {
+        get { HotKeySlot.quickNote.shortcut }
+        set { HotKeySlot.quickNote.shortcut = newValue }
+    }
+
+    static var quickAdd: KeyShortcut? {
+        get { HotKeySlot.quickAdd.shortcut }
+        set { HotKeySlot.quickAdd.shortcut = newValue }
+    }
+}
+
 /// One system-wide hot key.
 final class GlobalHotKey {
     static let quickNote = GlobalHotKey(id: 1)
+    static let quickAdd = GlobalHotKey(id: 2)
 
     var onPress: (() -> Void)?
     private(set) var shortcut: KeyShortcut?

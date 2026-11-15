@@ -70,6 +70,9 @@ struct SidebarView: View {
             }
             .tag(AppState.homeID)
             .help("Recent notes, the scratchpad and folders (⇧⌘H)")
+            TaskListRow(list: .today, state: state)
+            TaskListRow(list: .upcoming, state: state)
+            TaskListRow(list: .inbox, state: state)
             if let scratchpad = library.scratchpad {
                 SidebarRow(title: "Scratchpad", count: scratchpad.entryCount) {
                     Image(systemName: "note.text")
@@ -86,18 +89,22 @@ struct SidebarView: View {
 
         let pinned = library.pinnedNotes
         if !pinned.isEmpty {
-            Section("Pinned") {
+            Section {
                 ForEach(pinned) { note in
                     NoteRow(note: note, state: state, systemImage: "pin")
                 }
+            } header: {
+                SidebarHeader("Pinned")
             }
         }
 
         if !library.folders.isEmpty {
-            Section("Folders") {
+            Section {
                 ForEach(library.folders, id: \.self) { folder in
                     FolderRow(folder: folder, state: state)
                 }
+            } header: {
+                SidebarHeader("Folders")
             }
         }
 
@@ -107,7 +114,7 @@ struct SidebarView: View {
                 NoteRow(note: note, state: state)
             }
         } header: {
-            Text("Notes")
+            SidebarHeader("Notes")
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
                 .dropDestination(for: String.self) { items, _ in
@@ -127,12 +134,14 @@ struct SidebarView: View {
                 .padding(.vertical, Space.s)
                 .selectionDisabled()
         } else {
-            Section(results.count == 1 ? "1 Note" : "\(results.count) Notes") {
+            Section {
                 ForEach(results) { result in
                     SearchResultRow(result: result)
                         .tag(result.note.id)
                         .noteContextMenu(result.note, state: state)
                 }
+            } header: {
+                SidebarHeader(results.count == 1 ? "1 Note" : "\(results.count) Notes")
             }
         }
     }
@@ -140,7 +149,26 @@ struct SidebarView: View {
 
 // MARK: - Rows
 
-/// Screendrop's sidebar row: glyph, title, optional count.
+/// One left edge for the whole sidebar: glyphs sit flush at the start of
+/// their column, and section headers are indented to line up with them.
+enum SidebarMetrics {
+    static let glyphColumn: CGFloat = 20
+    static let glyphSpacing: CGFloat = 10
+    /// How far the list's own header inset sits left of a row's content.
+    static let headerIndent: CGFloat = 11
+}
+
+/// A section header that starts where the rows' glyphs do.
+struct SidebarHeader: View {
+    let title: String
+    init(_ title: String) { self.title = title }
+
+    var body: some View {
+        Text(title).padding(.leading, SidebarMetrics.headerIndent)
+    }
+}
+
+/// A sidebar row: glyph, title, optional count.
 struct SidebarRow<Icon: View>: View {
     let title: String
     var isPlaceholder = false
@@ -151,11 +179,11 @@ struct SidebarRow<Icon: View>: View {
         // Not a Label: the sidebar tints Label icons with the system accent.
         // These take the theme's accent instead (or a quiet grey for themes
         // without one), with room between glyph and title.
-        HStack(spacing: 12) {
+        HStack(spacing: SidebarMetrics.glyphSpacing) {
             icon()
                 .symbolVariant(.fill)
                 .sidebarGlyphTint()
-                .frame(width: 20, alignment: .center)
+                .frame(width: SidebarMetrics.glyphColumn, alignment: .leading)
             Text(title)
                 .lineLimit(1)
                 .foregroundStyle(isPlaceholder ? .secondary : .primary)
@@ -167,8 +195,43 @@ struct SidebarRow<Icon: View>: View {
             }
         }
         .padding(.vertical, 4)
-        .padding(.horizontal, 2)
+        .padding(.trailing, 2)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// Today, Upcoming and Inbox. Each counts its own tasks, so typing in a
+/// note redraws only these rows, not the whole sidebar.
+private struct TaskListRow: View {
+    let list: AppState.Page
+    let state: AppState
+    @State private var isTargeted = false
+
+    var body: some View {
+        let index = state.library.tasks
+        let (title, symbol, tag, help, count): (String, String, UUID, String, Int?) = switch list {
+        case .today: ("Today", "sun.max", AppState.todayID, "Tasks due today and overdue (⌘1)", index.todayCount)
+        case .upcoming: ("Upcoming", "calendar", AppState.upcomingID, "Tasks with a date, by day (⌘2)", nil)
+        default: ("Inbox", "tray", AppState.inboxID, "Tasks from Quick Add, waiting for a date (⌘3)", index.inboxTasks().count)
+        }
+        SidebarRow(title: title, count: count == 0 ? nil : count) {
+            Image(systemName: symbol)
+        }
+        .tag(tag)
+        .help(help)
+        .listRowBackground(isTargeted ? RoundedRectangle(cornerRadius: 6).fill(Color.accentColor.opacity(0.18)).padding(.horizontal, 10) : nil)
+        // Drop a task here to give it today, or take its date away in the inbox.
+        .dropDestination(for: String.self) { items, _ in
+            let tasks = items.compactMap(TaskDrag.id(from:)).compactMap { index.task(id: $0) }
+            for task in tasks {
+                switch list {
+                case .today: index.move(task, to: .now)
+                case .inbox: index.setDue(task, nil)
+                default: return false
+                }
+            }
+            return !tasks.isEmpty
+        } isTargeted: { isTargeted = $0 && list != .upcoming }
     }
 }
 
@@ -258,10 +321,10 @@ private struct FolderNameField: View {
     @FocusState private var isFocused: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SidebarMetrics.glyphSpacing) {
             Image(systemName: "folder.fill")
                 .sidebarGlyphTint()
-                .frame(width: 20, alignment: .center)
+                .frame(width: SidebarMetrics.glyphColumn, alignment: .leading)
             TextField("Folder Name", text: $text)
                 .textFieldStyle(.plain)
                 .focused($isFocused)
@@ -269,7 +332,7 @@ private struct FolderNameField: View {
                 .onExitCommand { finish(name) }
         }
         .padding(.vertical, 4)
-        .padding(.horizontal, 2)
+        .padding(.trailing, 2)
         .onAppear {
             text = name
             DispatchQueue.main.async { isFocused = true }
@@ -290,11 +353,11 @@ private struct SearchResultRow: View {
     let result: SearchResult
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
+        HStack(alignment: .firstTextBaseline, spacing: SidebarMetrics.glyphSpacing) {
             Image(systemName: "doc.text")
                 .symbolVariant(.fill)
                 .sidebarGlyphTint()
-                .frame(width: 20, alignment: .center)
+                .frame(width: SidebarMetrics.glyphColumn, alignment: .leading)
             VStack(alignment: .leading, spacing: 1) {
                 Text(result.note.displayTitle)
                     .foregroundStyle(.primary)
@@ -308,7 +371,7 @@ private struct SearchResultRow: View {
             }
         }
         .padding(.vertical, 4)
-        .padding(.horizontal, 2)
+        .padding(.trailing, 2)
         .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
     }
 }

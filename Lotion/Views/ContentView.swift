@@ -47,7 +47,7 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 340)
         } detail: {
             detail
-                .navigationTitle(state.selectedNote?.displayTitle ?? "Home")
+                .navigationTitle(state.selectedNote?.displayTitle ?? pageTitle)
                 .navigationSubtitle(state.selectedNote.map { note in
                     note.isScratchpad ? (note.entryCount == 1 ? "1 entry" : "\(note.entryCount) entries") : note.folder ?? "Notes"
                 } ?? "")
@@ -60,7 +60,11 @@ struct ContentView: View {
             state.openMainWindow = { [openWindow] in openWindow(id: "main") }
         }
         .onDisappear { state.isMainWindowOpen = false }
-        .inspector(isPresented: $inspectorVisible) {
+        // Task lists have nothing to inspect.
+        .inspector(isPresented: Binding(
+            get: { inspectorVisible && (state.selectedNote != nil || state.page == .home) },
+            set: { inspectorVisible = $0 }
+        )) {
             // Keep the inspector's ideal size out of the split view's
             // constraint pass; its width belongs to the split view.
             GeometryReader { _ in
@@ -112,6 +116,15 @@ struct ContentView: View {
         }
     }
 
+    private var pageTitle: String {
+        switch state.page {
+        case .home: "Home"
+        case .today: "Today"
+        case .upcoming: "Upcoming"
+        case .inbox: "Inbox"
+        }
+    }
+
     @ViewBuilder private var detail: some View {
         Group {
             if let note = state.selectedNote {
@@ -126,7 +139,12 @@ struct ContentView: View {
                         }
                 }
             } else {
-                HomeView(state: state, palette: editorStyle.palette)
+                switch state.page {
+                case .home: HomeView(state: state, palette: editorStyle.palette)
+                case .today: TodayView(state: state, palette: editorStyle.palette)
+                case .upcoming: UpcomingView(state: state, palette: editorStyle.palette)
+                case .inbox: InboxView(state: state, palette: editorStyle.palette)
+                }
             }
         }
         .background(canvas.ignoresSafeArea())

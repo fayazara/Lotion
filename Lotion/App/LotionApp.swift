@@ -54,6 +54,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         QuickNoteController.shared.state = state
         GlobalHotKey.quickNote.onPress = { QuickNoteController.shared.toggle() }
         GlobalHotKey.quickNote.register(KeyShortcut.quickNote)
+        QuickAddController.shared.state = state
+        GlobalHotKey.quickAdd.onPress = { QuickAddController.shared.toggle() }
+        GlobalHotKey.quickAdd.register(KeyShortcut.quickAdd)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -110,6 +113,24 @@ struct LotionCommands: Commands {
                 state.showHome()
             }
                 .keyboardShortcut("h", modifiers: [.command, .shift])
+            Button("Today") {
+                state.showMainWindow()
+                state.show(.today)
+            }
+                .keyboardShortcut("1")
+            Button("Upcoming") {
+                state.showMainWindow()
+                state.show(.upcoming)
+            }
+                .keyboardShortcut("2")
+            Button("Inbox") {
+                state.showMainWindow()
+                state.show(.inbox)
+            }
+                .keyboardShortcut("3")
+            Button("Quick Add Task…") { QuickAddController.shared.toggle() }
+                .keyboardShortcut("a", modifiers: [.command, .shift])
+            Divider()
             Button("Open Scratchpad") {
                 state.showMainWindow()
                 state.openScratchpad()

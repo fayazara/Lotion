@@ -53,6 +53,8 @@ struct SlashItem {
         SlashItem(title: "Audio", detail: "From your Mac", symbol: "waveform", glyph: nil, kind: .image, keywords: ["audio", "sound", "music", "mp3", "voice", "memo", "recording"], special: "audio"),
         SlashItem(title: "File", detail: "Attach any file", symbol: "paperclip", glyph: nil, kind: .embed, keywords: ["file", "attachment", "attach", "zip", "upload"], special: "file"),
         SlashItem(title: "Embed Note", detail: "![[Another note]]", symbol: "doc.on.doc", glyph: nil, kind: .embed, keywords: ["note", "embed", "transclude", "include", "page", "[["], special: "note"),
+        SlashItem(title: "Task List", detail: "[tasks]", symbol: "checklist.checked", glyph: nil, kind: .embed,
+                  keywords: ["tasks", "todos", "today", "due", "agenda", "query", "filter", "list", "upcoming"], special: "tasks"),
         SlashItem(title: "Table of Contents", detail: "[TOC]", symbol: "list.bullet.indent", glyph: nil, kind: .embed, keywords: ["toc", "contents", "outline", "headings", "index"], special: "toc"),
         SlashItem(title: "Code", detail: "```", symbol: "chevron.left.forwardslash.chevron.right", glyph: nil, kind: .code, keywords: ["code", "snippet", "fence", "```"]),
         SlashItem(title: "Diagram", detail: "Mermaid flowchart", symbol: "point.3.connected.trianglepath.dotted", glyph: nil, kind: .code,
@@ -704,6 +706,7 @@ extension BlockEditorView {
         default:
             var block = Block(kind: .embed)
             if special == "toc" { block.info = "toc" }
+            if special == "tasks" { block.info = "tasks" }
             insertEmbed(block, at: index, replacingEmpty: isEmpty)
         }
     }

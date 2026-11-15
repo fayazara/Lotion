@@ -66,6 +66,7 @@ extension BlockEditorView: NSTextViewDelegate {
     }
 
     func afterTextChange(_ textView: BlockTextView, at index: Int, edit: (range: NSRange, string: String)?) {
+        if edit?.string == " " { writeTaskDate(in: textView, at: index) }
         let view = views[index]
         LinkPreview.shared.hide()
         // A paste is finished; while typing, the link being written is left alone.
@@ -127,6 +128,30 @@ extension BlockEditorView: NSTextViewDelegate {
         var attributes = textView.typingAttributes
         attributes[.lotionLink] = nil
         textView.typingAttributes = displayTypingAttributes(attributes, for: textView)
+        syncModel(from: textView, at: index)
+        endTyping()
+    }
+
+    /// In a to-do, a date in words becomes the day it means as the space after
+    /// it is typed: `@tomorrow` → `@2026-11-16`, `@fri 3pm` → `@2026-11-20 15:00`.
+    /// The file then reads the same next week.
+    func writeTaskDate(in textView: BlockTextView, at index: Int) {
+        guard blocks[index].kind == .todo, textView.cell == nil, let storage = textView.textStorage else { return }
+        let caret = textView.selectedRange().location
+        let string = storage.string as NSString
+        guard caret >= 3, caret <= string.length, string.character(at: caret - 1) == 32 else { return }
+        let before = string.substring(to: caret - 1) as NSString
+        let at = before.range(of: "@", options: .backwards)
+        guard at.location != NSNotFound, caret - 1 - at.location <= 40,
+              at.location == 0 || before.substring(with: NSRange(location: at.location - 1, length: 1)) == " " else { return }
+        let range = NSRange(location: at.location, length: caret - 1 - at.location)
+        guard !hasCode(storage, in: range), let replacement = TaskSyntax.canonical(string.substring(with: range)) else { return }
+        registerUndo("Date")
+        storage.beginEditing()
+        let attributes = storage.attributes(at: range.location, effectiveRange: nil)
+        storage.replaceCharacters(in: range, with: NSAttributedString(string: replacement, attributes: attributes))
+        storage.endEditing()
+        textView.setSelectedRange(NSRange(location: range.location + (replacement as NSString).length + 1, length: 0))
         syncModel(from: textView, at: index)
         endTyping()
     }

@@ -33,6 +33,9 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 52) {
                 header
+                HomeTodayTasks(state: state, palette: palette) { title, symbol, content in
+                    section(title, systemImage: symbol, content: content)
+                }
                 if library.notes.isEmpty {
                     emptyLibrary
                 } else {
@@ -129,7 +132,11 @@ struct HomeView: View {
 
     // MARK: Sections
 
-    private func section<Content: View>(_ title: String, systemImage: String, @ViewBuilder content: () -> Content) -> some View {
+    private func section<Content: View>(_ title: String, systemImage: String, @ViewBuilder content: () -> Content) -> AnyView {
+        AnyView(sectionBody(title, systemImage: systemImage, content: content))
+    }
+
+    private func sectionBody<Content: View>(_ title: String, systemImage: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: Space.xl) {
             Label(title, systemImage: systemImage)
                 .font(.system(size: 12, weight: .semibold))
@@ -156,6 +163,45 @@ struct HomeView: View {
 }
 
 // MARK: - Pieces
+
+/// Home's look at today: what's due and overdue, the first few of it. Its
+/// own view, so a note's typing redraws only this part of Home.
+private struct HomeTodayTasks: View {
+    let state: AppState
+    let palette: ThemePalette
+    let section: (String, String, () -> AnyView) -> AnyView
+
+    var body: some View {
+        let today = state.library.tasks.today()
+        let open = today.overdue + today.today
+        if !open.isEmpty {
+            let colors = TaskColors(palette: palette)
+            section("Today", "sun.max") {
+                AnyView(VStack(alignment: .leading, spacing: 0) {
+                    let shown = Array(open.prefix(5))
+                    ForEach(shown) { task in
+                        TaskCompactRow(task: task, state: state, colors: colors, isLast: task.id == shown.last?.id && open.count <= 5)
+                    }
+                    if open.count > 5 {
+                        Button { state.show(.today) } label: {
+                            Text("\(open.count - 5) more in Today")
+                                .font(.system(size: 13))
+                                .foregroundStyle(colors.secondary)
+                                .padding(.leading, TaskCompactRow.textInset)
+                                .frame(height: 36)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("All of today’s tasks (⌘1)")
+                    }
+                }
+                // The rows' hover room hangs outside, so checkboxes line up with the section's icon.
+                .padding(.horizontal, -10))
+            }
+        }
+    }
+}
 
 /// A row of cards that scrolls sideways. Each edge fades only while there
 /// are cards past it, so neither end of the row is ever cut off hard.
@@ -351,6 +397,8 @@ private struct NoteCard: View {
                 clean = String(clean.dropFirst(prefix.count))
                 break
             }
+            // A task reads as its words, without its date, priority or tags.
+            if TaskSyntax.line(line) != nil { clean = TaskSyntax.metadata(in: clean).title }
             clean = clean.replacingOccurrences(of: #"\[([^\]]*)\]\([^)]*\)"#, with: "$1", options: .regularExpression)
                 .replacingOccurrences(of: #"[*_`~]"#, with: "", options: .regularExpression)
             guard !clean.isEmpty else { continue }

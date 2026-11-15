@@ -27,6 +27,8 @@ final class EditorController {
     fileprivate var noteID: Note.ID?
     /// Shows another note, for embeds that link to one.
     var openNote: ((Note.ID) -> Void)?
+    /// Shows a task's note at its line, for `[tasks]` blocks.
+    var openTask: ((TaskItem) -> Void)?
     private var pending: [(Note.ID, (BlockEditorView) -> Void)] = []
 
     func focus(_ note: Note) {
@@ -85,6 +87,34 @@ final class EditorController {
             return
         }
         run(on: note) { $0.revealEntry(id: id) }
+    }
+
+    /// Puts the caret at the end of a task's line, by its line in the file.
+    func revealLine(_ line: Int, in note: Note) {
+        let lines = note.text.components(separatedBy: "\n")
+        let raw = lines.indices.contains(line) ? lines[line] : ""
+        if let source {
+            DispatchQueue.main.async {
+                let string = source.string as NSString
+                var location = 0
+                for (index, text) in source.string.components(separatedBy: "\n").enumerated() {
+                    if index == line {
+                        let range = NSRange(location: location + (text as NSString).length, length: 0)
+                        source.window?.makeFirstResponder(source)
+                        source.setSelectedRange(range)
+                        source.scrollRangeToVisible(range)
+                        return
+                    }
+                    location += (text as NSString).length + 1
+                    if location > string.length { return }
+                }
+            }
+            return
+        }
+        // The task's place among the note's to-dos, and its words, to find its block.
+        let ordinal = TaskSyntax.tasks(in: note.text, noteID: note.id).firstIndex { $0.line == line }
+        let title = TaskSyntax.line(raw).map { TaskSyntax.metadata(in: $0.body).title } ?? ""
+        run(on: note) { $0.revealTask(title: title, ordinal: ordinal) }
     }
 
     func revealMatch(_ query: String, in note: Note) {
@@ -282,6 +312,9 @@ struct NoteEditor: NSViewRepresentable {
             }
             editor.noteNames = { [weak self] in
                 library.notes.filter { $0.id != self?.note?.id && !$0.isScratchpad && !$0.title.isEmpty }.map(\.title).sorted()
+            }
+            editor.connectTasks(to: library, note: { [weak self] in self?.note }) { [weak self] task in
+                self?.controller?.openTask?(task)
             }
             editor.isScratchpad = note.isScratchpad
             editor.load(BlockMarkdown.parse(note.text))

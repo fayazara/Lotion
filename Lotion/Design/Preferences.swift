@@ -33,10 +33,16 @@ enum Prefs {
 
 /// What the main window shows when Lotion opens.
 enum LaunchView: String, CaseIterable, Identifiable {
-    case home, lastNote
+    case home, today, lastNote
 
     var id: String { rawValue }
-    var title: String { self == .home ? "Home" : "Last Note" }
+    var title: String {
+        switch self {
+        case .home: "Home"
+        case .today: "Today"
+        case .lastNote: "Last Note"
+        }
+    }
 }
 
 // MARK: - Fonts
