@@ -28,6 +28,31 @@
     -->
 
     <item>
+      <title>Version 0.0.8</title>
+      <sparkle:version>8</sparkle:version>
+      <sparkle:shortVersionString>0.0.8</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 15 Nov 2026 12:32:02 +0000</pubDate>
+      <description><![CDATA[
+        <h2>What's New in 0.0.8</h2>
+        <ul>
+          <li>Tasks: any checklist line in a note is a task. Give it a date and it shows up in Today, Upcoming and Inbox</li>
+          <li>Quick Add (⌃⌥T) adds a task from any app</li>
+          <li>New icons throughout, from Hugeicons</li>
+          <li>The sidebar has larger icons, a grey selection and a Today icon showing today's date</li>
+          <li>Search the icon picker for any of 6,000 icons, or a brand logo like Google, GitHub or Cloudflare</li>
+          <li>Fixed the scratchpad failing to save when its folder was missing</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/fayazara/Lotion/releases/download/v0.0.8/Lotion.dmg"
+        type="application/octet-stream"
+        sparkle:edSignature="4yoPUCC1aFXN7Dil43kfM14CGB0Qzh2DCYUFsIsIS4w0fUq63Skb+ajkDxES7D6k8AjSHiWi5CE85vZ90PrCDA=="
+        length="15649489"
+      />
+    </item>
+
+    <item>
       <title>Version 0.0.7</title>
       <sparkle:version>7</sparkle:version>
       <sparkle:shortVersionString>0.0.7</sparkle:shortVersionString>
