@@ -28,6 +28,32 @@
     -->
 
     <item>
+      <title>Version 0.0.7</title>
+      <sparkle:version>7</sparkle:version>
+      <sparkle:shortVersionString>0.0.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 15 Nov 2026 04:40:23 +0000</pubDate>
+      <description><![CDATA[
+        <h2>What's New in 0.0.7</h2>
+        <ul>
+          <li>A new Home page: your recent notes, pinned notes, the scratchpad and folders, in your theme's colors. Choose in Settings whether Lotion opens on Home or your last note</li>
+          <li>Toggle lists and toggle headings, as in Notion: type &gt; and a space, or pick them from the / menu. They nest, and are saved as standard collapsible sections. A quote is now " and a space</li>
+          <li>A smoother caret that fades gently instead of stepping, and stays solid while you type</li>
+          <li>Up and Down keep their column through short lines, and the caret no longer hides under the toolbar</li>
+          <li>Keyboard shortcuts: ⌘↩ checks a to-do, opens a toggle or follows a link; ⌘/ opens the block menu; Space checks selected to-dos</li>
+          <li>VoiceOver now hears what each block is: headings, to-dos, toggles, code and table cells</li>
+          <li>More breathing room around scratchpad entries</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/fayazara/Lotion/releases/download/v0.0.7/Lotion.dmg"
+        type="application/octet-stream"
+        sparkle:edSignature="3IDBRjGqPWfKyU1Hy27553Zb6VD+JJmE1I6TdmVq1ej+0P5xqKRWHSBol7I7CwCwpSoZFMgH68m9LJms+m97Bw=="
+        length="12808470"
+      />
+    </item>
+
+    <item>
       <title>Version 0.0.6</title>
       <sparkle:version>6</sparkle:version>
       <sparkle:shortVersionString>0.0.6</sparkle:shortVersionString>
