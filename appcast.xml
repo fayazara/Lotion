@@ -28,6 +28,28 @@
     -->
 
     <item>
+      <title>Version 0.0.11</title>
+      <sparkle:version>11</sparkle:version>
+      <sparkle:shortVersionString>0.0.11</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 15 Nov 2026 16:40:09 +0000</pubDate>
+      <description><![CDATA[
+        <h2>What's New in 0.0.11</h2>
+        <ul>
+          <li>Settings are redesigned: every pane is a set of tidy cards, with pictures for choices like appearance, line spacing and text width</li>
+          <li>Themes now show as a compact grid, with the rest one click away</li>
+          <li>The Settings window keeps a size that fits everything, so nothing overlaps or gets cut off</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/fayazara/Lotion/releases/download/v0.0.11/Lotion.dmg"
+        type="application/octet-stream"
+        sparkle:edSignature="rgkpbMORZVXOO+KFuo4Yc/UzI3hHwWiF5NP/UIV9O5Ujf6vrNIn85HH2Zc8XCEHSmXpnLR0j+83O3X8B8L2EDQ=="
+        length="15709831"
+      />
+    </item>
+
+    <item>
       <title>Version 0.0.10</title>
       <sparkle:version>10</sparkle:version>
       <sparkle:shortVersionString>0.0.10</sparkle:shortVersionString>
