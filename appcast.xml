@@ -28,6 +28,26 @@
     -->
 
     <item>
+      <title>Version 0.0.9</title>
+      <sparkle:version>9</sparkle:version>
+      <sparkle:shortVersionString>0.0.9</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 15 Nov 2026 13:10:21 +0000</pubDate>
+      <description><![CDATA[
+        <h2>What's New in 0.0.9</h2>
+        <ul>
+          <li>Fixed the search field taking focus every time Lotion opens</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/fayazara/Lotion/releases/download/v0.0.9/Lotion.dmg"
+        type="application/octet-stream"
+        sparkle:edSignature="31YWYRWg4F4OiaFwBT3w2W6r1kX9OaUgDD5rZXtLT5pOErAWlCZbipDWJJ1/wEHL4lagAm34TAcvInEGHdXXCw=="
+        length="15656663"
+      />
+    </item>
+
+    <item>
       <title>Version 0.0.8</title>
       <sparkle:version>8</sparkle:version>
       <sparkle:shortVersionString>0.0.8</sparkle:shortVersionString>
