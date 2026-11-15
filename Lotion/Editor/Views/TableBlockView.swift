@@ -115,7 +115,7 @@ final class TableBlockView: BlockView {
 
     private func configure(_ view: BlockTextView, row: Int, column: Int) {
         view.typingAttributes = cellBase(row: row, column: column)
-        view.insertionPointColor = theme.palette.text
+        view.caretColor = theme.palette.text
         view.selectedTextAttributes = [.backgroundColor: theme.palette.selection]
         view.isContinuousSpellCheckingEnabled = theme.style.spellCheck
         view.placeholder = nil

@@ -60,6 +60,7 @@ final class BlockTextView: NSTextView {
         linkTextAttributes = [:]
         focusRingType = .none
         layoutManager.allowsNonContiguousLayout = false
+        setUpCaret()
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -86,6 +87,7 @@ final class BlockTextView: NSTextView {
     override func becomeFirstResponder() -> Bool {
         let accepted = super.becomeFirstResponder()
         if accepted { editor?.textViewDidFocus(self) }
+        DispatchQueue.main.async { [weak self] in self?.updateCaret() }
         needsDisplay = true
         return accepted
     }
@@ -93,6 +95,8 @@ final class BlockTextView: NSTextView {
     override func resignFirstResponder() -> Bool {
         let resigned = super.resignFirstResponder()
         if resigned {
+            caretLayer.isHidden = true
+            caretLayer.removeAllAnimations()
             // A table cell left behind (by Tab, say) would keep drawing its selection
             // as a gray inactive highlight, so drop it down to a caret.
             if cell != nil, selectedRange().length > 0 {
@@ -112,11 +116,6 @@ final class BlockTextView: NSTextView {
         super.mouseDown(with: event)
         isTrackingMouse = false
         editor?.textViewMouseUp(self)
-    }
-
-    override func setSelectedRanges(_ ranges: [NSValue], affinity: NSSelectionAffinity, stillSelecting: Bool) {
-        super.setSelectedRanges(ranges, affinity: affinity, stillSelecting: stillSelecting)
-        if stillSelecting && isTrackingMouse { editor?.textViewDragged(self) }
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {
@@ -202,6 +201,106 @@ final class BlockTextView: NSTextView {
         if let editor, let result = editor.validate(item, from: self) { return result }
         return super.validateUserInterfaceItem(item)
     }
+
+    // MARK: Caret
+
+    /// The caret is a layer of our own. AppKit's blinks by redrawing the
+    /// text view, which shows as a stepped, low-frame-rate fade; a layer's
+    /// opacity is animated by Core Animation at the display's full rate.
+    private let caretLayer = CALayer()
+    private var keyObservers: [NSObjectProtocol] = []
+
+    var caretColor: NSColor = .textColor {
+        didSet { caretLayer.backgroundColor = caretColor.cgColor }
+    }
+
+    private func setUpCaret() {
+        // AppKit's own caret stays, invisible, so everything else about it works.
+        super.insertionPointColor = .clear
+        wantsLayer = true
+        caretLayer.backgroundColor = caretColor.cgColor
+        caretLayer.cornerRadius = 1
+        caretLayer.isHidden = true
+        caretLayer.zPosition = 10
+        // Moves are instant; only the blink animates.
+        caretLayer.actions = ["position": NSNull(), "bounds": NSNull(), "frame": NSNull(),
+                              "hidden": NSNull(), "opacity": NSNull(), "backgroundColor": NSNull()]
+        layer?.addSublayer(caretLayer)
+    }
+
+    override func makeBackingLayer() -> CALayer {
+        let layer = super.makeBackingLayer()
+        if caretLayer.superlayer == nil { layer.addSublayer(caretLayer) }
+        return layer
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        keyObservers.forEach(NotificationCenter.default.removeObserver)
+        keyObservers = []
+        if let window {
+            for name in [NSWindow.didBecomeKeyNotification, NSWindow.didResignKeyNotification] {
+                keyObservers.append(NotificationCenter.default.addObserver(forName: name, object: window, queue: .main) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.updateCaret() }
+                })
+            }
+        }
+        updateCaret()
+    }
+
+    /// Puts the caret where the selection is, solid, and starts it blinking
+    /// after a moment, so it never blinks while you type or move it.
+    func updateCaret() {
+        guard window?.firstResponder === self, window?.isKeyWindow == true, selectedRange().length == 0,
+              let layoutManager, let textContainer else {
+            caretLayer.isHidden = true
+            caretLayer.removeAllAnimations()
+            return
+        }
+        layoutManager.ensureLayout(for: textContainer)
+        var rect = caretRect
+        guard rect.height > 0 else { caretLayer.isHidden = true; return }
+        let scale = window?.backingScaleFactor ?? 2
+        let width: CGFloat = scale >= 2 ? 2 : 1
+        rect.origin.x = (round((rect.minX - width / 2) * scale) / scale)
+        rect.size.width = width
+        if let layer, caretLayer.superlayer !== layer { layer.addSublayer(caretLayer) }
+        caretLayer.contentsScale = scale
+        caretLayer.frame = rect
+        caretLayer.isHidden = false
+        caretLayer.opacity = 1
+        caretLayer.removeAllAnimations()
+        let blink = CAKeyframeAnimation(keyPath: "opacity")
+        // Solid, an eased fade out, off, an eased fade back: about once a second, like macOS.
+        blink.values = [1, 1, 0, 0, 1]
+        blink.keyTimes = [0, 0.42, 0.58, 0.9, 1]
+        blink.timingFunctions = [CAMediaTimingFunction(name: .linear), CAMediaTimingFunction(name: .easeInEaseOut),
+                                 CAMediaTimingFunction(name: .linear), CAMediaTimingFunction(name: .easeInEaseOut)]
+        blink.duration = 1.1
+        blink.repeatCount = .infinity
+        blink.beginTime = CACurrentMediaTime() + 0.5
+        blink.fillMode = .backwards
+        caretLayer.add(blink, forKey: "blink")
+    }
+
+    override func setSelectedRanges(_ ranges: [NSValue], affinity: NSSelectionAffinity, stillSelecting: Bool) {
+        super.setSelectedRanges(ranges, affinity: affinity, stillSelecting: stillSelecting)
+        if stillSelecting && isTrackingMouse { editor?.textViewDragged(self) }
+        updateCaret()
+    }
+
+    override func didChangeText() {
+        super.didChangeText()
+        updateCaret()
+    }
+
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        updateCaret()
+    }
+
+    /// AppKit's caret is clear; keep it that way whatever asks to draw it.
+    override func drawInsertionPoint(in rect: NSRect, color: NSColor, turnedOn flag: Bool) {}
 
     // MARK: Drawing
 

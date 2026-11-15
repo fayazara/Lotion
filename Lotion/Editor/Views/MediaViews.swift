@@ -840,7 +840,7 @@ final class HTMLBlockView: BlockView {
 
     private func configure(_ view: BlockTextView) {
         view.typingAttributes = theme.baseAttributes(for: .code)
-        view.insertionPointColor = theme.palette.text
+        view.caretColor = theme.palette.text
         view.selectedTextAttributes = [.backgroundColor: theme.palette.selection]
         view.isContinuousSpellCheckingEnabled = false
         view.isAutomaticSpellingCorrectionEnabled = false

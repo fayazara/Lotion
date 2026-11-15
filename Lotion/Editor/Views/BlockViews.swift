@@ -156,7 +156,7 @@ final class TextBlockView: BlockView {
 
     private func configure(_ view: BlockTextView) {
         view.typingAttributes = baseAttributes
-        view.insertionPointColor = theme.palette.text
+        view.caretColor = theme.palette.text
         view.selectedTextAttributes = [.backgroundColor: theme.palette.selection]
         view.isContinuousSpellCheckingEnabled = theme.style.spellCheck && block.kind != .raw
         view.placeholderColor = theme.palette.marker
@@ -494,7 +494,7 @@ final class CodeBlockView: BlockView {
 
     private func configure(_ view: BlockTextView) {
         view.typingAttributes = theme.baseAttributes(for: .code)
-        view.insertionPointColor = theme.palette.text
+        view.caretColor = theme.palette.text
         view.selectedTextAttributes = [.backgroundColor: theme.palette.selection]
         view.isContinuousSpellCheckingEnabled = false
         view.isAutomaticSpellingCorrectionEnabled = false
