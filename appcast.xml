@@ -28,6 +28,26 @@
     -->
 
     <item>
+      <title>Version 0.0.13</title>
+      <sparkle:version>13</sparkle:version>
+      <sparkle:shortVersionString>0.0.13</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 15 Nov 2026 17:21:54 +0000</pubDate>
+      <description><![CDATA[
+        <h2>What's New in 0.0.13</h2>
+        <ul>
+          <li>The Today icon on Home is bigger, so the date on it is easy to read</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/fayazara/Lotion/releases/download/v0.0.13/Lotion.dmg"
+        type="application/octet-stream"
+        sparkle:edSignature="4BAKIet7szqlbkDeuL1mHEN4R1SHWBdAfRRRg+EgyUmjRLZDTcclOZ+nruLwnuWEsudQf5g2b33qXqYY2h4/DA=="
+        length="15756952"
+      />
+    </item>
+
+    <item>
       <title>Version 0.0.12</title>
       <sparkle:version>12</sparkle:version>
       <sparkle:shortVersionString>0.0.12</sparkle:shortVersionString>
