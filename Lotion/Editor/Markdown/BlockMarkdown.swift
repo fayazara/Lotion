@@ -134,6 +134,8 @@ nonisolated enum BlockMarkdown {
                     var block = Block(kind: .entry)
                     block.info = date
                     add(block, from: i, to: i)
+                } else if content.hasPrefix("<details"), parseToggle(line: line) {
+                    continue
                 } else if isHTMLStart(content) || content.hasPrefix("$$") {
                     parseRawUntilBlank(math: content.hasPrefix("$$"), html: isHTMLStart(content))
                 } else if isReferenceDefinition(content) {
@@ -242,6 +244,69 @@ nonisolated enum BlockMarkdown {
             }
             _ = level(at: lines[start].indent, isListItem: false)
             add(Block(kind: html ? .html : .raw, text: NSAttributedString(string: raw[start...j].joined(separator: "\n"))), from: start, to: j)
+        }
+
+        /// A `<details>` block: a toggle whose `<summary>` is its line (an
+        /// `<h1>`–`<h6>` in it makes a toggle heading), with the Markdown up to
+        /// the matching `</details>` nested under it. False when it isn't one,
+        /// and it's read as HTML instead.
+        mutating func parseToggle(line: Line) -> Bool {
+            let start = i
+            let opening = line.content.trimmingCharacters(in: .whitespaces)
+            guard let close = opening.firstIndex(of: ">") else { return false }
+            let attributes = opening[opening.index(opening.startIndex, offsetBy: 8)..<close].trimmingCharacters(in: .whitespaces)
+            guard attributes.isEmpty || attributes == "open" || attributes.hasPrefix("open ") || attributes.hasPrefix("open=") else { return false }
+            var summary = opening[opening.index(after: close)...].trimmingCharacters(in: .whitespaces)
+            var summaryLine = start
+            if summary.isEmpty {
+                summaryLine += 1
+                while summaryLine < lines.count, lines[summaryLine].isBlank { summaryLine += 1 }
+                guard summaryLine < lines.count else { return false }
+                summary = lines[summaryLine].content.trimmingCharacters(in: .whitespaces)
+            }
+            guard summary.hasPrefix("<summary>"), let end = summary.range(of: "</summary>") else { return false }
+            let rest = summary[end.upperBound...].trimmingCharacters(in: .whitespaces)
+            var title = String(summary[summary.index(summary.startIndex, offsetBy: 9)..<end.lowerBound]).trimmingCharacters(in: .whitespaces)
+            // Everything up to the matching close, counting toggles inside it.
+            var depth = rest.hasPrefix("</details>") ? 0 : 1
+            var closing = summaryLine
+            if depth > 0 {
+                var j = summaryLine + 1
+                while j < lines.count {
+                    let content = lines[j].content
+                    if content.hasPrefix("<details") { depth += 1 }
+                    if content.hasPrefix("</details>") { depth -= 1 }
+                    if depth == 0 { break }
+                    j += 1
+                }
+                guard j < lines.count else { return false }
+                closing = j
+            } else if rest != "</details>" {
+                return false
+            }
+            var heading: Int?
+            if title.hasPrefix("<h"), title.count >= 9, let level = title.dropFirst(2).first?.wholeNumberValue, (1...6).contains(level),
+               title.hasPrefix("<h\(level)>"), title.hasSuffix("</h\(level)>") {
+                heading = min(level, 4)
+                title = String(title.dropFirst(4).dropLast(5)).trimmingCharacters(in: .whitespaces)
+            }
+            title = title.replacingOccurrences(of: "&lt;/", with: "</")
+            let indent = level(at: line.indent, isListItem: false)
+            var toggle = Block(kind: heading.map { .heading($0) } ?? .toggle, text: InlineMarkdown.parse(title))
+            toggle.isToggleHeading = heading != nil
+            toggle.isOpen = !attributes.isEmpty
+            toggle.indent = indent
+            add(toggle, from: start, to: closing)
+            // Written from its content, with its children: never verbatim.
+            blocks[blocks.count - 1].source = nil
+            if closing > summaryLine + 1 {
+                let inner = raw[(summaryLine + 1)..<closing].map { stripColumns($0, line.indent) }.joined(separator: "\n")
+                for var child in BlockMarkdown.parse(inner).blocks {
+                    child.indent += indent + 1
+                    blocks.append(child)
+                }
+            }
+            return true
         }
 
         mutating func parseListItem(_ marker: ListMarker, line: Line) {
@@ -628,8 +693,11 @@ nonisolated enum BlockMarkdown {
         let numbers = listNumbers(blocks)
         // The content column of the last list item at each depth.
         var columns: [Int] = []
-        for (index, block) in blocks.enumerated() {
-            let previous = index > 0 ? blocks[index - 1] : nil
+        var previous: Block?
+        var index = 0
+        while index < blocks.count {
+            let block = blocks[index]
+            defer { previous = block }
             let level = min(block.indent, columns.count)
             let prefix = level > 0 ? String(repeating: " ", count: columns[level - 1]) : ""
             let marker = listMarker(block, number: numbers[index])
@@ -647,6 +715,19 @@ nonisolated enum BlockMarkdown {
                     out += String(repeating: "\n", count: max(canonicalGap(previous, block), minimum))
                 }
             }
+            if block.isToggle {
+                // The toggle and everything nested under it, as `<details>`.
+                var end = index
+                while end + 1 < blocks.count, blocks[end + 1].indent > block.indent { end += 1 }
+                let children = blocks[(index + 1)..<(end + 1)].map { child -> Block in
+                    var child = child
+                    child.indent -= block.indent + 1
+                    return child
+                }
+                out += toggle(block, children: children, prefix: prefix)
+                index = end + 1
+                continue
+            }
             let isVerbatim = block.source != nil
                 && (index == 0 ? block.sourcePrevious == nil : block.sourcePrevious == previous?.id)
             if isVerbatim, let source = block.source {
@@ -654,9 +735,29 @@ nonisolated enum BlockMarkdown {
             } else {
                 out += markdown(for: block, prefix: prefix, marker: marker)
             }
+            index += 1
         }
         out += String(repeating: "\n", count: trailingNewlines)
         return out
+    }
+
+    /// A toggle as HTML `<details>`, which GitHub and most Markdown viewers
+    /// show as a collapsible section, with its children as Markdown inside.
+    private static func toggle(_ block: Block, children: [Block], prefix: String) -> String {
+        var title = InlineMarkdown.write(block.text)
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "</", with: "&lt;/")
+        if let level = block.kind.headingLevel { title = "<h\(level)>\(title)</h\(level)>" }
+        var lines = [prefix + (block.isOpen ? "<details open>" : "<details>"), prefix + "<summary>\(title)</summary>"]
+        if !children.isEmpty {
+            // Blank lines around the content, so it reads as Markdown and not HTML.
+            lines.append("")
+            let inner = write(children, trailingNewlines: 0)
+            lines += inner.split(separator: "\n", omittingEmptySubsequences: false).map { $0.isEmpty ? "" : prefix + $0 }
+            lines.append("")
+        }
+        lines.append(prefix + "</details>")
+        return lines.joined(separator: "\n")
     }
 
     private static func listMarker(_ block: Block, number: Int?) -> String {
@@ -677,7 +778,7 @@ nonisolated enum BlockMarkdown {
     /// Fewer newlines than this would merge the two blocks in Markdown.
     private static func minimumGap(_ previous: Block, _ block: Block) -> Int {
         // HTML runs to a blank line; front matter ends at its own fence.
-        if previous.kind == .html { return 2 }
+        if previous.kind == .html || previous.isToggle { return 2 }
         if previous.kind == .raw { return previous.text.string.hasPrefix("---\n") ? 1 : 2 }
         switch block.kind {
         case .heading, .code, .bullet, .numbered, .todo:
@@ -701,7 +802,11 @@ nonisolated enum BlockMarkdown {
                 index == 0 ? String(line) : (line.isEmpty ? "" : continuation + line)
             }.joined(separator: "\n")
         }
+        // A toggle on its own, without the blocks nested under it.
+        if block.isToggle { return toggle(block, children: [], prefix: prefix) }
         switch block.kind {
+        case .toggle:
+            return ""
         case .paragraph:
             var text = InlineMarkdown.write(block.text)
             // A link alone on its line would read back as a card; brackets keep it a link.

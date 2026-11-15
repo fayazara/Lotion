@@ -70,7 +70,7 @@ extension BlockEditorView {
             return
         }
         for (index, block) in blocks.enumerated() {
-            guard let level = block.kind.headingLevel, level <= 3, !(index == 0 && level == 1) else { continue }
+            guard let level = block.kind.headingLevel, level <= 3, !(index == 0 && level == 1), !isHidden(index) else { continue }
             let title = block.plainText.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !title.isEmpty else { continue }
             entries.append(ScrollSpy.Entry(id: block.id, level: level, title: title))

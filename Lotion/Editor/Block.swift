@@ -16,6 +16,9 @@ nonisolated enum BlockKind: Equatable, Hashable {
     case numbered
     case todo
     case quote
+    /// A toggle list item: a line with a triangle that shows or hides the
+    /// blocks nested under it. Saved as HTML `<details>`.
+    case toggle
     case code
     case divider
     case table
@@ -36,7 +39,7 @@ nonisolated enum BlockKind: Equatable, Hashable {
     /// Blocks whose content is one run of rich text.
     var isText: Bool {
         switch self {
-        case .paragraph, .heading, .bullet, .numbered, .todo, .quote: true
+        case .paragraph, .heading, .bullet, .numbered, .todo, .quote, .toggle: true
         default: false
         }
     }
@@ -49,7 +52,7 @@ nonisolated enum BlockKind: Equatable, Hashable {
     /// What a new block made by pressing Return after this one is.
     var continuation: BlockKind {
         switch self {
-        case .bullet, .numbered, .todo: self
+        case .bullet, .numbered, .todo, .toggle: self
         default: .paragraph
         }
     }
@@ -125,6 +128,15 @@ nonisolated struct Block: Identifiable {
     var isBareLink = false
     /// A quote's GitHub alert type (NOTE, TIP, IMPORTANT, WARNING, CAUTION).
     var alert: String?
+    /// A toggle heading: a heading that shows or hides the blocks nested under it.
+    var isToggleHeading = false
+    /// Whether a toggle shows the blocks nested under it (`<details open>`).
+    var isOpen = false
+
+    /// A toggle list item or a toggle heading.
+    var isToggle: Bool { kind == .toggle || (isToggleHeading && kind.headingLevel != nil) }
+    /// Blocks after this one, indented further, nest under it.
+    var holdsChildren: Bool { kind.isList || isToggle }
 
     /// The Markdown this block was parsed from. Written back unchanged while
     /// the block is, so opening and saving a note never rewrites it.
@@ -164,6 +176,8 @@ nonisolated struct Block: Identifiable {
         copy.imageAlt = imageAlt
         copy.isBareLink = isBareLink
         copy.alert = alert
+        copy.isToggleHeading = isToggleHeading
+        copy.isOpen = isOpen
         return copy
     }
 

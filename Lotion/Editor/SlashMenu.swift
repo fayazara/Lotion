@@ -23,6 +23,8 @@ struct SlashItem {
     var starter = ""
     /// Blocks that need more than a kind: "embed", "pdf", "audio", "file", "toc", "note".
     var special: String? = nil
+    /// A heading that folds what's nested under it.
+    var toggleHeading = false
 
     static let all: [SlashItem] = [
         SlashItem(title: "Text", detail: "Plain paragraph", symbol: nil, glyph: "Aa", kind: .paragraph, keywords: ["paragraph", "plain", "body", "p"]),
@@ -32,7 +34,15 @@ struct SlashItem {
         SlashItem(title: "Bulleted List", detail: "-", symbol: "list.bullet", glyph: nil, kind: .bullet, keywords: ["ul", "bullet", "unordered", "list", "-"]),
         SlashItem(title: "Numbered List", detail: "1.", symbol: "list.number", glyph: nil, kind: .numbered, keywords: ["ol", "ordered", "number", "list", "1."]),
         SlashItem(title: "To-do List", detail: "[ ]", symbol: "checklist", glyph: nil, kind: .todo, keywords: ["todo", "task", "check", "checkbox", "checklist", "[]"]),
-        SlashItem(title: "Quote", detail: ">", symbol: "text.quote", glyph: nil, kind: .quote, keywords: ["blockquote", "citation", ">"]),
+        SlashItem(title: "Toggle List", detail: ">", symbol: "chevron.right", glyph: nil, kind: .toggle,
+                  keywords: ["toggle", "collapse", "expand", "fold", "details", "accordion", "dropdown", ">"]),
+        SlashItem(title: "Toggle Heading 1", detail: "#>", symbol: nil, glyph: "▸H1", kind: .heading(1),
+                  keywords: ["toggle", "collapse", "fold", "heading", "h1"], toggleHeading: true),
+        SlashItem(title: "Toggle Heading 2", detail: "##>", symbol: nil, glyph: "▸H2", kind: .heading(2),
+                  keywords: ["toggle", "collapse", "fold", "heading", "h2"], toggleHeading: true),
+        SlashItem(title: "Toggle Heading 3", detail: "###>", symbol: nil, glyph: "▸H3", kind: .heading(3),
+                  keywords: ["toggle", "collapse", "fold", "heading", "h3"], toggleHeading: true),
+        SlashItem(title: "Quote", detail: "\"", symbol: "text.quote", glyph: nil, kind: .quote, keywords: ["blockquote", "citation", "\""]),
         SlashItem(title: "Callout", detail: "> [!NOTE]", symbol: "info.circle", glyph: nil, kind: .quote, keywords: ["callout", "note", "alert", "tip", "warning", "admonition"], alert: "NOTE"),
         SlashItem(title: "Image", detail: "From your Mac", symbol: "photo", glyph: nil, kind: .image, keywords: ["image", "picture", "photo", "img", "screenshot"]),
         SlashItem(title: "Video", detail: "From your Mac", symbol: "play.rectangle", glyph: nil, kind: .image, keywords: ["video", "movie", "clip", "mp4"], video: true),
@@ -629,6 +639,20 @@ extension BlockEditorView {
             let caret = NSRange(location: (item.starter as NSString).length, length: 0)
             mutate("Insert", focus: .text(fence.id, nil, caret)) { blocks in
                 if isEmpty { blocks[index] = fence } else { blocks.insert(fence, at: index + 1) }
+            }
+            return
+        }
+        if item.kind == .toggle || item.toggleHeading {
+            if isEmpty {
+                convert(index: index, to: item.kind, name: "Insert", toggleHeading: item.toggleHeading)
+            } else {
+                var toggle = Block(kind: item.kind)
+                toggle.isToggleHeading = item.toggleHeading
+                toggle.isOpen = true
+                toggle.indent = block.indent
+                mutate("Insert", focus: .text(toggle.id, nil, NSRange(location: 0, length: 0))) { blocks in
+                    blocks.insert(toggle, at: subtree(at: index).upperBound + 1)
+                }
             }
             return
         }

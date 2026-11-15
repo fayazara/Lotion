@@ -66,6 +66,9 @@ final class BlockEditorView: NSView {
     /// through short lines and blocks. Any other move forgets it.
     var verticalGoalX: CGFloat?
     var isMovingVertically = false
+    /// Blocks inside a closed toggle, by index. They keep their views but
+    /// are laid out with no height and skipped by the caret.
+    private(set) var hiddenBlocks: [Bool] = []
 
     // Slash menu
     var slash: SlashState?
@@ -248,6 +251,7 @@ final class BlockEditorView: NSView {
         a.kind == b.kind && a.indent == b.indent && a.checked == b.checked && a.info == b.info
             && a.imageSource == b.imageSource && a.imageAlt == b.imageAlt && a.table == b.table
             && a.alert == b.alert && a.isBareLink == b.isBareLink
+            && a.isToggleHeading == b.isToggleHeading && a.isOpen == b.isOpen
             && a.text.isEqual(to: b.text)
     }
 
@@ -265,14 +269,23 @@ final class BlockEditorView: NSView {
     /// Keeps nesting possible: a block can sit at most one level under a list item before it.
     static func normalizeIndents(_ blocks: inout [Block]) {
         for index in blocks.indices {
-            if blocks[index].kind.headingLevel != nil { blocks[index].indent = 0; continue }
             guard blocks[index].indent > 0 else { continue }
+            // Headings nest only inside a toggle; anywhere else they start the line.
+            if blocks[index].kind.headingLevel != nil {
+                let indent = blocks[index].indent
+                let parent = blocks[..<index].last { $0.indent < indent }
+                if parent?.isToggle != true {
+                    blocks[index].indent = 0
+                    blocks[index].touch()
+                    continue
+                }
+            }
             let maximum: Int
             if index == 0 {
                 maximum = 0
             } else {
                 let previous = blocks[index - 1]
-                maximum = previous.kind.isList ? previous.indent + 1 : previous.indent
+                maximum = previous.holdsChildren ? previous.indent + 1 : previous.indent
             }
             if blocks[index].indent > maximum {
                 blocks[index].indent = maximum
@@ -345,11 +358,29 @@ final class BlockEditorView: NSView {
         columnWidth = newWidth
         columnX = newX
         let first = moved ? 0 : max(0, min(start, views.count))
+        updateHiddenBlocks()
         var y = first == 0 ? topInset : views[first - 1].frame.maxY
+        // The block above, for spacing: the last one that shows.
+        var previousShown = first - 1
+        while previousShown >= 0, isHidden(previousShown) { previousShown -= 1 }
         for index in first..<views.count {
-            y += theme.spacing(before: blocks[index], after: index > 0 ? blocks[index - 1] : nil,
-                               isAfterTitle: !isScratchpad && index == 1 && blocks[0].kind == .heading(1))
             let view = views[index]
+            if isHidden(index) {
+                // Inside a closed toggle: no height, no room around it.
+                let rect = NSRect(x: columnX, y: y, width: columnWidth, height: 0)
+                if view.frame != rect { view.frame = rect }
+                view.isHidden = true
+                continue
+            }
+            view.isHidden = false
+            y += theme.spacing(before: blocks[index], after: previousShown >= 0 ? blocks[previousShown] : nil,
+                               isAfterTitle: !isScratchpad && index == 1 && blocks[0].kind == .heading(1))
+            previousShown = index
+            // A toggle's triangle, and the hint in an empty one, follow what's inside it.
+            if blocks[index].isToggle {
+                view.invalidateHeight()
+                view.needsDisplay = true
+            }
             let height = view.height(for: columnWidth)
             // A scratchpad's entry breaks run edge to edge.
             let rect = blocks[index].kind == .entry
@@ -377,6 +408,79 @@ final class BlockEditorView: NSView {
         if blockSelection != nil || crossBlockDrag != nil { needsDisplay = true }
     }
 
+    // MARK: Toggles
+
+    private func updateHiddenBlocks() {
+        var hidden = Array(repeating: false, count: blocks.count)
+        var closedAt: Int?
+        for (index, block) in blocks.enumerated() {
+            if let indent = closedAt, block.indent > indent {
+                hidden[index] = true
+                continue
+            }
+            closedAt = block.isToggle && !block.isOpen ? block.indent : nil
+        }
+        hiddenBlocks = hidden
+    }
+
+    func isHidden(_ index: Int) -> Bool { hiddenBlocks.indices.contains(index) && hiddenBlocks[index] }
+
+    func hasChildren(_ index: Int) -> Bool {
+        index + 1 < blocks.count && blocks[index + 1].indent > blocks[index].indent
+    }
+
+    /// A first line inside an empty toggle, with the caret in it.
+    func addFirstChild(to id: UUID) {
+        guard let index = index(of: id) else { return }
+        var child = Block(kind: .paragraph)
+        child.indent = blocks[index].indent + 1
+        mutate("New Block", focus: .text(child.id, nil, NSRange(location: 0, length: 0))) { blocks in
+            blocks.insert(child, at: index + 1)
+        }
+    }
+
+    /// Opens or closes a toggle. Like folding, it isn't a step to undo.
+    func toggleOpen(_ id: UUID) {
+        guard let index = index(of: id), blocks[index].isToggle else { return }
+        let opening = !blocks[index].isOpen
+        // A caret inside a toggle being closed moves up to the toggle's line.
+        var caret: FocusTarget?
+        if !opening, let focused = focusedIndex, focused > index, subtree(at: index).contains(focused) {
+            caret = .text(id, nil, NSRange(location: blocks[index].text.length, length: 0))
+        }
+        blocks[index].isOpen = opening
+        blocks[index].touch()
+        views[index].update(blocks[index])
+        relayout(from: index)
+        if let caret { apply(caret) }
+        changed()
+        announce(opening ? "expanded" : "collapsed")
+    }
+
+    /// Opens every closed toggle around a block, so it can be seen.
+    func openToggles(around index: Int) {
+        guard blocks.indices.contains(index) else { return }
+        var indent = blocks[index].indent
+        var opened = false
+        var probe = index - 1
+        while probe >= 0, indent > 0 {
+            if blocks[probe].indent < indent {
+                if blocks[probe].isToggle, !blocks[probe].isOpen {
+                    blocks[probe].isOpen = true
+                    blocks[probe].touch()
+                    views[probe].update(blocks[probe])
+                    opened = true
+                }
+                indent = blocks[probe].indent
+            }
+            probe -= 1
+        }
+        if opened {
+            relayout()
+            changed()
+        }
+    }
+
     /// Builds the text views of blocks on or near the screen.
     func materializeVisible() {
         let visible = visibleRect.insetBy(dx: 0, dy: -max(600, visibleRect.height))
@@ -390,7 +494,7 @@ final class BlockEditorView: NSView {
         }
         var index = low
         while index < views.count, views[index].frame.minY <= visible.maxY {
-            if !views[index].isMaterialized { views[index].materialize() }
+            if !views[index].isMaterialized, !isHidden(index) { views[index].materialize() }
             index += 1
         }
     }
@@ -418,6 +522,8 @@ final class BlockEditorView: NSView {
             let top = mid == 0 ? 0 : views[mid - 1].frame.maxY
             if top <= y { low = mid } else { high = mid - 1 }
         }
+        // Inside a closed toggle, the toggle itself is what's there.
+        while low > 0, isHidden(low) { low -= 1 }
         return low
     }
 
@@ -433,6 +539,7 @@ final class BlockEditorView: NSView {
     func focus(_ id: UUID, _ placement: CaretPlacement) {
         guard let index = indexByID[id] else { return }
         blockSelection = nil
+        openToggles(around: index)
         let view = views[index]
         view.materialize()
         if let table = view as? TableBlockView {
@@ -465,6 +572,7 @@ final class BlockEditorView: NSView {
     }
 
     func focusCell(_ position: CellPosition, in id: UUID, placement: CaretPlacement) {
+        if let index = indexByID[id] { openToggles(around: index) }
         guard let table = view(for: id) as? TableBlockView, let cell = table.cell(position) else { return }
         blockSelection = nil
         window?.makeFirstResponder(cell)

@@ -257,7 +257,8 @@ final class BlockTheme {
         if previous.kind.headingLevel != nil { return round(em * 0.4) }
         // Wider than a line break inside an item, so each item holds together.
         if block.kind.isList && previous.kind.isList { return round(em * 0.6) }
-        if block.indent > 0 && previous.kind.isList { return round(em * 0.6) }
+        if block.kind == .toggle && previous.kind == .toggle { return round(em * 0.6) }
+        if block.indent > 0 && previous.holdsChildren { return round(em * 0.6) }
         let framed: Set<BlockKind> = [.code, .table, .image, .embed, .divider, .quote, .raw]
         if framed.contains(block.kind) || framed.contains(previous.kind) { return round(em * 0.75) }
         return round(em * 0.7)

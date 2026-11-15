@@ -43,7 +43,9 @@ extension BlockEditorView {
     }
 
     private func clickBelowContent() {
-        if let last = blocks.last, last.kind.isText, last.kind.headingLevel == nil || blocks.count == 1 {
+        // The last line, unless it sits inside a toggle or list: then a new
+        // line at the top level, as clicking below a toggle is meant to leave it.
+        if let last = blocks.last, last.kind.isText, last.kind.headingLevel == nil || blocks.count == 1, last.indent == 0 {
             focus(last.id, .end)
             return
         }
@@ -238,6 +240,10 @@ extension BlockEditorView {
     /// ⌘↩ in a block's text: checks off a to-do, or opens the link at the caret.
     func commandReturn(in textView: BlockTextView) -> Bool {
         guard textView.cell == nil, let index = index(of: textView.blockID) else { return false }
+        if blocks[index].isToggle {
+            toggleOpen(blocks[index].id)
+            return true
+        }
         if blocks[index].kind == .todo {
             toggleChecked(blocks[index].id)
             announce(blocks[index].checked ? "done" : "not done")
@@ -628,7 +634,7 @@ extension BlockEditorView {
     }
 
     private func dropIndex(atY y: CGFloat) -> Int {
-        for (index, view) in views.enumerated() where y < view.frame.midY { return index }
+        for (index, view) in views.enumerated() where !isHidden(index) && y < view.frame.midY { return index }
         return views.count
     }
 
@@ -648,9 +654,11 @@ extension BlockEditorView {
             let turn = NSMenuItem(title: "Turn Into", action: nil, keyEquivalent: "")
             let submenu = NSMenu()
             for item in SlashItem.all where item.kind.isText || item.kind == .code {
-                let entry = ClosureMenuItem(title: item.title) { [weak self] in self?.turnFocused(into: item.kind) }
+                let entry = ClosureMenuItem(title: item.title) { [weak self] in
+                    self?.turnFocused(into: item.kind, toggleHeading: item.toggleHeading)
+                }
                 entry.image = item.menuImage
-                entry.state = item.kind == block.kind ? .on : .off
+                entry.state = item.kind == block.kind && item.toggleHeading == block.isToggleHeading && item.alert == block.alert ? .on : .off
                 submenu.addItem(entry)
             }
             turn.submenu = submenu
@@ -681,8 +689,11 @@ extension BlockEditorView {
 
     /// What a block is, the way VoiceOver names a control's role.
     func accessibilityKind(of block: Block, at index: Int) -> String {
+        let state = block.isOpen ? "expanded" : "collapsed"
         switch block.kind {
+        case .heading(let level) where block.isToggleHeading: return "toggle heading level \(level), \(state)"
         case .heading(let level): return isTitle(block.id) ? "title" : "heading level \(level)"
+        case .toggle: return "toggle, \(state)"
         case .bullet: return block.indent > 0 ? "bulleted list item, level \(block.indent + 1)" : "bulleted list item"
         case .numbered:
             let number = (views.indices.contains(index) ? (views[index] as? TextBlockView)?.number : nil) ?? 1

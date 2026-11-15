@@ -768,8 +768,134 @@ enum SelfTest {
         await polish(state)
         guard let editor = state.editor.editor else { return }
         await editorKeyboard(state, editor)
+        await toggles(state, editor)
         await performance(state, editor)
         log(failures == 0 ? "DONE all passed" : "DONE \(failures) failed")
+    }
+
+    // MARK: Toggles
+
+    private static func toggles(_ state: AppState, _ editor: BlockEditorView) async {
+        // Nested toggles and a toggle heading survive a round trip as <details>.
+        let markdown = """
+        # Toggles
+
+        <details open>
+        <summary>What can we do here</summary>
+
+        <details>
+        <summary>This means we need **something** else</summary>
+
+        Hidden text
+
+        </details>
+
+        </details>
+
+        <details>
+        <summary><h2>Hello</h2></summary>
+
+        - inside
+
+        </details>
+
+        After
+        """
+        let parsed = BlockMarkdown.parse(markdown).blocks
+        check(parsed.map(\.kind) == [.heading(1), .toggle, .toggle, .paragraph, .heading(2), .bullet, .paragraph],
+              "<details> reads as toggles", "\(parsed.map(\.kind))")
+        check(parsed.map(\.indent) == [0, 0, 1, 2, 0, 1, 0], "toggle content nests under its toggle", "\(parsed.map(\.indent))")
+        check(parsed[1].isOpen && !parsed[2].isOpen && parsed[4].isToggleHeading, "open and toggle headings are kept")
+        let written = BlockMarkdown.write(parsed, trailingNewlines: 0)
+        check(written == markdown, "toggles write back unchanged", written)
+
+        state.newNote()
+        await wait(0.8)
+        guard let note = state.selectedNote else { return }
+        type(editor, "Toggles")
+        key(editor, #selector(NSResponder.insertNewline(_:)))
+        type(editor, "> ")
+        check(editor.blocks.last?.kind == .toggle && editor.blocks.last?.isOpen == true, "“> ” makes an open toggle")
+        type(editor, "First")
+        key(editor, #selector(NSResponder.insertNewline(_:)))
+        check(editor.blocks.count == 3 && editor.blocks[2].kind == .paragraph && editor.blocks[2].indent == 1
+              && focused(editor)?.blockID == editor.blocks[2].id, "return at the end of a toggle writes inside it")
+        type(editor, "inside first")
+        key(editor, #selector(NSResponder.insertBacktab(_:)))
+        key(editor, #selector(NSResponder.insertNewline(_:)))
+        check(editor.blocks.count == 4 && editor.blocks[3].indent == 0, "shift-tab steps back out of a toggle", "\(editor.blocks.map(\.indent))")
+        type(editor, "> ")
+        type(editor, "Second")
+        let second = editor.blocks[3].id
+        editor.layoutSubtreeIfNeeded()
+        let emptyHeight = editor.views[3].frame.height
+        check(emptyHeight > editor.theme.lineHeight(for: .paragraph) * 1.5, "an empty open toggle shows a hint under it", "\(emptyHeight)")
+        editor.addFirstChild(to: second)
+        check(editor.blocks.count == 5 && editor.blocks[4].indent == 1 && focused(editor)?.blockID == editor.blocks[4].id,
+              "clicking the hint gives a line inside the toggle")
+        editor.layoutSubtreeIfNeeded()
+        check(editor.views[3].frame.height < emptyHeight, "the hint goes once the toggle has something in it")
+        type(editor, "> ")
+        type(editor, "Nested")
+        key(editor, #selector(NSResponder.insertNewline(_:)))
+        type(editor, "Deep inside")
+        check(editor.blocks.count == 6 && editor.blocks[4].kind == .toggle && editor.blocks[4].indent == 1 && editor.blocks[5].indent == 2,
+              "toggles nest", "\(editor.blocks.map(\.indent))")
+        check(note.text.contains("<details open>\n<summary>Second</summary>") && note.text.contains("<summary>Nested</summary>"),
+              "toggles are saved as <details>", note.text)
+
+        // Closing hides what's inside, and moves the caret out of it.
+        editor.toggleOpen(second)
+        editor.layoutSubtreeIfNeeded()
+        check(editor.isHidden(4) && editor.isHidden(5) && editor.views[5].isHidden, "closing a toggle hides its blocks")
+        check(focused(editor)?.blockID == second, "the caret leaves a toggle as it closes")
+        check(!note.text.contains("<details open>\n<summary>Second"), "a closed toggle is saved closed")
+        key(editor, #selector(NSResponder.insertNewline(_:)))
+        check(editor.blocks.count == 7 && editor.blocks[6].kind == .toggle && editor.blocks[6].indent == 0,
+              "return after a closed toggle starts another, after its contents", "\(editor.blocks.map(\.kind))")
+        key(editor, #selector(NSResponder.insertNewline(_:)))
+        check(editor.blocks[6].kind == .paragraph, "return on an empty toggle makes it text")
+        editor.focus(editor.blocks[1].id, .end)
+        key(editor, #selector(NSResponder.moveDown(_:)))
+        key(editor, #selector(NSResponder.moveDown(_:)))
+        check(focused(editor)?.blockID == second, "arrows pass over a closed toggle's blocks")
+        // Going to a hidden block opens the toggles around it.
+        editor.focus(editor.blocks[5].id, .end)
+        check(editor.blocks[3].isOpen && editor.blocks[4].isOpen && !editor.isHidden(5), "revealing a block opens its toggles")
+
+        // A toggle heading from the keyboard.
+        editor.focus(editor.blocks.last!.id, .end)
+        key(editor, #selector(NSResponder.insertNewline(_:)))
+        key(editor, #selector(NSResponder.insertNewline(_:)))
+        key(editor, #selector(NSResponder.insertNewline(_:)))
+        type(editor, "## ")
+        type(editor, "> ")
+        check(editor.blocks.last?.kind == .heading(2) && editor.blocks.last?.isToggleHeading == true && editor.blocks.last?.isOpen == true,
+              "“## ” then “> ” makes an open toggle heading",
+              "\(editor.blocks.map(\.kind))")
+        type(editor, "Section")
+        check(note.text.contains("<summary><h2>Section</h2></summary>"), "a toggle heading is saved in its summary", note.text)
+        if let view = editor.views.last?.primaryTextView {
+            check(view.accessibilityRoleDescription() == "toggle heading level 2, expanded", "VoiceOver hears a toggle heading",
+                  view.accessibilityRoleDescription() ?? "nil")
+        }
+        // Return twice on empty lines steps back out of nested toggles.
+        editor.focus(editor.blocks[5].id, .end)
+        key(editor, #selector(NSResponder.insertNewline(_:)))
+        let empty = editor.blocks[6].id
+        check(editor.blocks[6].indent == 2, "return in a toggle's content stays inside it")
+        key(editor, #selector(NSResponder.insertNewline(_:)))
+        check(editor.blocks[6].id == empty && editor.blocks[6].indent == 1, "return on an empty line steps out of a toggle")
+        key(editor, #selector(NSResponder.insertNewline(_:)))
+        check(editor.blocks[6].indent == 0 && focused(editor)?.blockID == empty, "and again out of the toggle around it",
+              "\(editor.blocks.map(\.indent))")
+        type(editor, "Outside")
+        check(note.text.contains("</details>\n\nOutside"), "the line after a toggle is written outside it", note.text)
+
+        // Collapse the first toggle, so the picture shows both states.
+        editor.toggleOpen(editor.blocks[1].id)
+        await snap("30-toggles", editor.window)
+        await wait(1.5)
     }
 
     // MARK: Keyboard and scrolling

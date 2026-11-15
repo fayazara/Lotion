@@ -272,8 +272,8 @@ extension BlockEditorView: NSTextViewDelegate {
             convert(index: index, to: .code, info: info, keepText: false)
             return true
         }
-        // Return in an empty list item or quote ends the list.
-        if block.kind.isList || block.kind == .quote, text.length == 0 {
+        // Return in an empty list item, toggle or quote ends the list.
+        if block.kind.isList || block.kind == .quote || block.kind == .toggle, text.length == 0 {
             if block.indent > 0 {
                 indent(blockIndices: subtree(at: index), by: -1, name: "Outdent")
             } else {
@@ -282,11 +282,34 @@ extension BlockEditorView: NSTextViewDelegate {
             return true
         }
 
+        // Return on an empty line inside a toggle (or under a list item) steps
+        // out a level, so pressing it twice leaves the toggle, as with lists.
+        if block.kind == .paragraph, text.length == 0, block.indent > 0 {
+            indent(blockIndices: subtree(at: index), by: -1, name: "Outdent")
+            return true
+        }
+
+        // At the end of a toggle: inside it when it's open, after it (and
+        // everything in it) when it's closed.
+        if block.isToggle, selection.length == 0, selection.location == text.length {
+            var next = Block(kind: block.isOpen ? .paragraph : block.kind.continuation)
+            next.indent = block.indent + (block.isOpen ? 1 : 0)
+            next.isOpen = true
+            let at = block.isOpen ? index + 1 : subtree(at: index).upperBound + 1
+            mutate("New Block", focus: .text(next.id, nil, NSRange(location: 0, length: 0))) { blocks in
+                blocks.insert(next, at: at)
+            }
+            return true
+        }
+
         let newKind = block.kind.continuation
+        // Blocks that keep their place in a list or toggle when split.
+        let keepsIndent = block.kind.isList || block.kind == .paragraph || block.isToggle || block.kind.headingLevel != nil
         if selection.location == 0, selection.length == 0, text.length > 0 {
             // At the start: a new empty block above, the caret stays.
-            var above = Block(kind: block.kind.isList ? block.kind : .paragraph)
-            above.indent = block.kind.isList || block.kind == .paragraph ? block.indent : 0
+            var above = Block(kind: block.kind.isList || block.kind == .toggle ? block.kind : .paragraph)
+            above.indent = keepsIndent ? block.indent : 0
+            above.isOpen = true
             mutate("New Block", focus: .text(block.id, nil, NSRange(location: 0, length: 0))) { blocks in
                 blocks.insert(above, at: index)
             }
@@ -296,7 +319,8 @@ extension BlockEditorView: NSTextViewDelegate {
         let afterStart = NSMaxRange(selection)
         let after = text.attributedSubstring(from: NSRange(location: afterStart, length: text.length - afterStart))
         var next = Block(kind: newKind, text: after)
-        next.indent = (block.kind.isList || block.kind == .paragraph) ? block.indent : 0
+        next.indent = keepsIndent ? block.indent : 0
+        next.isOpen = true
         mutate("New Block", focus: .text(next.id, nil, NSRange(location: 0, length: 0))) { blocks in
             blocks[index].text = before
             blocks[index].touch()
@@ -389,7 +413,7 @@ extension BlockEditorView: NSTextViewDelegate {
     private func moveVertically(from textView: BlockTextView, at index: Int, up: Bool) -> Bool {
         let x = verticalGoalX ?? convert(textView.caretRect, from: textView).minX
         var target = index + (up ? -1 : 1)
-        while blocks.indices.contains(target), !isNavigable(blocks[target]) { target += up ? -1 : 1 }
+        while blocks.indices.contains(target), !isNavigable(blocks[target]) || isHidden(target) { target += up ? -1 : 1 }
         guard blocks.indices.contains(target) else {
             // Nowhere to go: the caret goes to the block's start or end.
             let length = textView.textStorage?.length ?? 0
@@ -423,7 +447,7 @@ extension BlockEditorView: NSTextViewDelegate {
 
     private func moveHorizontally(from index: Int, back: Bool) -> Bool {
         var target = index + (back ? -1 : 1)
-        while blocks.indices.contains(target), !isNavigable(blocks[target]) { target += back ? -1 : 1 }
+        while blocks.indices.contains(target), !isNavigable(blocks[target]) || isHidden(target) { target += back ? -1 : 1 }
         guard blocks.indices.contains(target) else { return true }
         focus(blocks[target].id, back ? .end : .start)
         return true
@@ -556,11 +580,27 @@ extension BlockEditorView: NSTextViewDelegate {
         let prefix = (string as NSString).substring(to: min(caret, (string as NSString).length))
 
         if textView.cell == nil {
+            // "> " in a heading, or "#> " and the like, makes a toggle heading.
+            if edit.string == " ", !block.isToggleHeading, let level = toggleHeadingShortcut(prefix, in: block.kind) {
+                registerUndo("Format")
+                let rest = (textView.textStorage?.attributedSubstring(from: NSRange(location: caret, length: (string as NSString).length - caret))) ?? NSAttributedString()
+                var new = blocks
+                new[index].kind = .heading(level)
+                new[index].isToggleHeading = true
+                new[index].isOpen = true
+                new[index].text = rest
+                new[index].touch()
+                setBlocks(new)
+                focus(block.id, .start)
+                changed()
+                return true
+            }
             if edit.string == " ", let (kind, checked, start) = blockShortcut(prefix, in: block.kind) {
                 registerUndo("Format")
                 let rest = (textView.textStorage?.attributedSubstring(from: NSRange(location: caret, length: (string as NSString).length - caret))) ?? NSAttributedString()
                 var new = blocks
                 new[index].kind = kind
+                new[index].isOpen = true
                 new[index].checked = checked
                 new[index].start = start
                 new[index].text = rest
@@ -594,6 +634,17 @@ extension BlockEditorView: NSTextViewDelegate {
         return false
     }
 
+    private func toggleHeadingShortcut(_ prefix: String, in kind: BlockKind) -> Int? {
+        if let level = kind.headingLevel, prefix == "> " { return level }
+        guard kind == .paragraph else { return nil }
+        switch prefix {
+        case "#> ": return 1
+        case "##> ": return 2
+        case "###> ": return 3
+        default: return nil
+        }
+    }
+
     private func blockShortcut(_ prefix: String, in kind: BlockKind) -> (BlockKind, Bool, Int?)? {
         if kind == .bullet {
             switch prefix {
@@ -611,7 +662,9 @@ extension BlockEditorView: NSTextViewDelegate {
         case "- ", "* ", "+ ": return (.bullet, false, nil)
         case "[] ", "[ ] ", "- [ ] ": return (.todo, false, nil)
         case "[x] ", "- [x] ": return (.todo, true, nil)
-        case "> ": return (.quote, false, nil)
+        // As in Notion: ">" folds, and a quote mark quotes.
+        case "> ": return (.toggle, false, nil)
+        case "\" ": return (.quote, false, nil)
         default:
             let body = prefix.dropLast(2)
             if prefix.hasSuffix(". ") || prefix.hasSuffix(") "), !body.isEmpty, body.count <= 4, body.allSatisfy({ $0.isASCII && $0.isNumber }),
@@ -705,10 +758,14 @@ extension BlockEditorView: NSTextViewDelegate {
 
     // MARK: Converting blocks
 
-    func convert(index: Int, to kind: BlockKind, info: String = "", keepText: Bool = true, name: String = "Turn Into") {
+    func convert(index: Int, to kind: BlockKind, info: String = "", keepText: Bool = true, name: String = "Turn Into",
+                 toggleHeading: Bool = false) {
         let block = blocks[index]
         var converted = block
         converted.kind = kind
+        converted.isToggleHeading = toggleHeading && kind.headingLevel != nil
+        // A new toggle starts open, as in Notion, showing what's nested under it.
+        if converted.isToggle, !block.isToggle { converted.isOpen = true }
         converted.touch()
         if kind == .code || kind == .raw {
             converted.text = NSAttributedString(string: keepText ? block.text.string : "")
@@ -729,14 +786,14 @@ extension BlockEditorView: NSTextViewDelegate {
     }
 
     /// Turns the focused or selected blocks into `kind`.
-    func turnFocused(into kind: BlockKind) {
+    func turnFocused(into kind: BlockKind, toggleHeading: Bool = false) {
         let indices: [Int]
         if let selection = blockSelection { indices = Array(selection) } else if let index = focusedIndex { indices = [index] } else { return }
         let targets = indices.filter { blocks[$0].kind.isText || blocks[$0].kind == .code || blocks[$0].kind == .raw }
         guard !targets.isEmpty else { return }
         if targets.count == 1, blockSelection == nil {
             if kind == .code, blocks[targets[0]].kind == .code { return }
-            convert(index: targets[0], to: kind)
+            convert(index: targets[0], to: kind, toggleHeading: toggleHeading)
             return
         }
         let ids = targets.map { blocks[$0].id }
@@ -744,6 +801,8 @@ extension BlockEditorView: NSTextViewDelegate {
             for index in targets {
                 let old = blocks[index]
                 blocks[index].kind = kind
+                blocks[index].isToggleHeading = toggleHeading && kind.headingLevel != nil
+                if blocks[index].isToggle, !old.isToggle { blocks[index].isOpen = true }
                 if kind == .code { blocks[index].text = NSAttributedString(string: old.text.string) }
                 if old.kind == .code || old.kind == .raw { blocks[index].text = NSAttributedString(string: old.text.string) }
                 if kind != .todo { blocks[index].checked = false }
@@ -815,11 +874,14 @@ extension BlockEditorView: NSTextViewDelegate {
         let first = range.lowerBound
         let block = blocks[first]
         let allowed = block.kind.isList || block.kind == .paragraph || block.kind == .code || block.kind == .quote || block.kind == .image
+            || block.kind == .toggle || block.kind.headingLevel != nil
         guard allowed || delta < 0 else { return }
         if delta > 0 {
             guard first > 0 else { return }
             let previous = blocks[first - 1]
-            let maximum = previous.kind.isList ? previous.indent + 1 : previous.indent
+            let maximum = previous.holdsChildren ? previous.indent + 1 : previous.indent
+            // Headings nest only inside a toggle.
+            if block.kind.headingLevel != nil, !previous.isToggle || previous.indent != block.indent { return }
             guard block.indent + delta <= maximum else { return }
         } else {
             guard block.indent > 0 else { return }
@@ -1200,6 +1262,8 @@ extension Block {
         copy.imageAlt = other.imageAlt
         copy.isBareLink = other.isBareLink
         copy.alert = other.alert
+        copy.isToggleHeading = other.isToggleHeading
+        copy.isOpen = other.isOpen
         copy.source = nil
         return copy
     }

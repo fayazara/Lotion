@@ -255,6 +255,10 @@ final class NoteEmbedBlockView: HoverBlockView {
                 style.headIndent = 18 + CGFloat(block.indent) * 14
                 style.firstLineHeadIndent = CGFloat(block.indent) * 14
                 if block.checked { color = palette.secondary }
+            case .toggle:
+                line = (block.isOpen ? "▾  " : "▸  ") + line
+                style.headIndent = 16 + CGFloat(block.indent) * 14
+                style.firstLineHeadIndent = CGFloat(block.indent) * 14
             case .quote:
                 color = palette.secondary
                 font = NSFontManager.shared.convert(font, toHaveTrait: .italicFontMask)

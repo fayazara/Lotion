@@ -181,6 +181,7 @@ final class TextBlockView: BlockView {
         case .heading(let level): isTitle ? "Untitled" : "Heading \(level)"
         case .bullet, .numbered: "List"
         case .todo: "To-do"
+        case .toggle: "Toggle"
         case .quote: "Quote"
         case .raw: "Markdown"
         default: "Type “/” for commands"
@@ -192,6 +193,7 @@ final class TextBlockView: BlockView {
         let old = self.block
         super.update(block)
         let formatChanged = old.kind != block.kind || old.checked != block.checked || old.alert != block.alert
+            || old.isToggleHeading != block.isToggleHeading
         if let textView {
             if formatChanged || !(textView.textStorage?.isEqual(to: block.text) ?? false) {
                 let selection = textView.selectedRange()
@@ -223,6 +225,7 @@ final class TextBlockView: BlockView {
     var leadingInset: CGFloat {
         var inset = CGFloat(block.indent) * theme.indentWidth
         if block.kind.isList { inset += block.kind == .numbered ? max(theme.markerWidth, numberWidth + 6) : theme.markerWidth }
+        if block.isToggle { inset += theme.markerWidth }
         if block.kind == .quote { inset += round(theme.em * 1.05) }
         return inset
     }
@@ -236,8 +239,20 @@ final class TextBlockView: BlockView {
     override func measure(width: CGFloat) -> CGFloat {
         let textWidth = max(20, width - leadingInset)
         let text = textView?.textStorage.map { NSAttributedString(attributedString: $0) } ?? displayText()
-        return TextMeasurer.shared.height(of: text, width: textWidth, base: baseAttributes) + alertHeader
+        return TextMeasurer.shared.height(of: text, width: textWidth, base: baseAttributes) + alertHeader + emptyToggleHint
     }
+
+    /// An open toggle with nothing in it says so on a line under it, as Notion does.
+    private var showsEmptyToggleHint: Bool {
+        guard block.isToggle, block.isOpen, let editor, let index = editor.index(of: block.id) else { return false }
+        return !editor.hasChildren(index)
+    }
+
+    private var emptyToggleHint: CGFloat {
+        showsEmptyToggleHint ? round(theme.em * 0.6) + theme.lineHeight(for: .paragraph) : 0
+    }
+
+    private static let emptyToggleText = "Empty toggle. Click or drop blocks inside."
 
     /// The title row of a GitHub alert ("Note", "Warning", …).
     private var alertHeader: CGFloat {
@@ -246,7 +261,7 @@ final class TextBlockView: BlockView {
 
     override func layoutContent() {
         textView?.frame = NSRect(x: leadingInset, y: alertHeader, width: max(20, bounds.width - leadingInset),
-                                 height: max(1, bounds.height - alertHeader))
+                                 height: max(1, bounds.height - alertHeader - emptyToggleHint))
     }
 
     override var firstLineMidY: CGFloat {
@@ -267,6 +282,15 @@ final class TextBlockView: BlockView {
         let palette = theme.palette
         let indent = CGFloat(block.indent) * theme.indentWidth
         let mid = firstLineMidY
+        if block.isToggle { drawDisclosure(indent: indent, mid: mid) }
+        if showsEmptyToggleHint {
+            let height = theme.lineHeight(for: .paragraph)
+            let attributes: [NSAttributedString.Key: Any] = [.font: theme.body, .foregroundColor: palette.secondary.withAlphaComponent(0.6)]
+            let size = (Self.emptyToggleText as NSString).size(withAttributes: attributes)
+            let x = CGFloat(block.indent + 1) * theme.indentWidth + theme.markerWidth - theme.indentWidth
+            (Self.emptyToggleText as NSString).draw(at: NSPoint(x: max(leadingInset, x), y: bounds.height - height + (height - size.height) / 2),
+                                                    withAttributes: attributes)
+        }
         switch block.kind {
         case .bullet:
             let center = NSPoint(x: indent + theme.markerWidth / 2 - 2, y: mid)
@@ -337,6 +361,43 @@ final class TextBlockView: BlockView {
         }
     }
 
+    /// A toggle's triangle: pointing right when closed, down when open, and
+    /// fainter while there is nothing inside it.
+    private func drawDisclosure(indent: CGFloat, mid: CGFloat) {
+        let side = round(theme.em * (block.kind.headingLevel != nil ? 0.62 : 0.56))
+        let center = NSPoint(x: indent + theme.markerWidth / 2 - 2, y: mid)
+        let path = NSBezierPath()
+        let half = side / 2
+        if block.isOpen {
+            path.move(to: NSPoint(x: center.x - half, y: center.y - half * 0.6))
+            path.line(to: NSPoint(x: center.x + half, y: center.y - half * 0.6))
+            path.line(to: NSPoint(x: center.x, y: center.y + half * 0.9))
+        } else {
+            path.move(to: NSPoint(x: center.x - half * 0.6, y: center.y - half))
+            path.line(to: NSPoint(x: center.x - half * 0.6, y: center.y + half))
+            path.line(to: NSPoint(x: center.x + half * 0.9, y: center.y))
+        }
+        path.close()
+        path.lineJoinStyle = .round
+        path.lineWidth = 1.5
+        let hasChildren = editor.map { editor in
+            editor.index(of: block.id).map { $0 + 1 < editor.blocks.count && editor.blocks[$0 + 1].indent > block.indent } ?? false
+        } ?? false
+        let color = hasChildren ? theme.palette.text.withAlphaComponent(0.75) : theme.palette.secondary.withAlphaComponent(0.55)
+        color.setFill()
+        color.setStroke()
+        path.fill()
+        path.stroke()
+    }
+
+    /// A toggle's triangle's hit area, in this view's coordinates.
+    var disclosureRect: NSRect? {
+        guard block.isToggle else { return nil }
+        let indent = CGFloat(block.indent) * theme.indentWidth
+        let side = round(theme.em * 1.0) + 10
+        return NSRect(x: indent + (theme.markerWidth - side) / 2 - 2, y: firstLineMidY - side / 2, width: side, height: side)
+    }
+
     /// The checkbox's hit area, in this view's coordinates.
     var checkboxRect: NSRect? {
         guard block.kind == .todo else { return nil }
@@ -348,6 +409,14 @@ final class TextBlockView: BlockView {
     override func mouseDownOutsideText(at point: NSPoint, event: NSEvent) -> Bool {
         if let checkboxRect, checkboxRect.contains(point) {
             editor?.toggleChecked(block.id)
+            return true
+        }
+        if let disclosureRect, disclosureRect.contains(point) {
+            editor?.toggleOpen(block.id)
+            return true
+        }
+        if showsEmptyToggleHint, point.y >= bounds.height - emptyToggleHint {
+            editor?.addFirstChild(to: block.id)
             return true
         }
         return false
