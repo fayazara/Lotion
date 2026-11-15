@@ -50,24 +50,21 @@ struct AgentsPane: View {
 
     var body: some View {
         SettingsPage {
-            Section {
-                Toggle(isOn: $isEnabled) {
-                    SettingsControlLabel(
-                        "Allow AI agents",
-                        detail: "Let Claude Code, Codex and other MCP clients read, write, organize and publish your notes. Agents connect over a private socket on this Mac."
-                    )
-                }
-                .onChange(of: isEnabled) { _, _ in
-                    AgentServer.shared.updateForPreference()
-                }
-            } header: {
-                Text("MCP Server")
+            SettingsSection("MCP server", icon: "terminal") {
+                SettingsToggle("Allow AI agents", icon: "sparkles",
+                               detail: "Let coding agents read, write, organize and publish your notes.",
+                               info: "Claude Code, Codex and other MCP clients connect over a private socket on this Mac.",
+                               isOn: $isEnabled)
+                    .onChange(of: isEnabled) { _, _ in
+                        AgentServer.shared.updateForPreference()
+                    }
             }
 
             if isEnabled {
-                Section {
+                SettingsSection("Connect an agent", icon: "link",
+                                footer: "Run the command in a terminal once. The agent opens Lotion in the background when it needs it.") {
                     ForEach(Setup.allCases) { setup in
-                        LabeledContent {
+                        SettingsRow(setup.rawValue, icon: setup == .json ? "chevron.left.forwardslash.chevron.right" : "terminal") {
                             Button {
                                 copy(setup)
                             } label: {
@@ -75,25 +72,19 @@ struct AgentsPane: View {
                                       icon: copied == setup ? "checkmark" : "doc.on.doc")
                                     .contentTransition(.symbolEffect(.replace))
                             }
-                        } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(setup.rawValue)
-                                Text(command(for: setup))
-                                    .font(.caption.monospaced())
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(2)
-                                    .truncationMode(.middle)
-                                    .textSelection(.enabled)
-                            }
+                        } below: {
+                            Text(command(for: setup))
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundStyle(Palette.secondaryLabel)
+                                .lineLimit(2)
+                                .truncationMode(.middle)
+                                .textSelection(.enabled)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 6)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                         }
                     }
-                } header: {
-                    Text("Connect an Agent")
-                } footer: {
-                    Text("Run the command in a terminal once. The agent opens Lotion in the background when it needs it.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }

@@ -12,40 +12,34 @@ struct TasksPane: View {
 
     var body: some View {
         SettingsPage {
-            Section {
-                LabeledContent {
+            SettingsSection("Quick Add", icon: "command") {
+                SettingsRow("Shortcut", icon: "command",
+                            detail: "Turns plain words into a task, from any app.",
+                            info: "“Call mum tomorrow 6pm #home p1” becomes a task due tomorrow at 6pm, tagged home, priority 1.") {
                     ShortcutRecorder(shortcut: $shortcut, slot: .quickAdd)
-                } label: {
-                    SettingsControlLabel("Quick Add shortcut",
-                                         detail: "Opens a field from any app that turns plain words into a task: “Call mum tomorrow 6pm #home p1”.")
                 }
                 if shortcut != nil, !GlobalHotKey.quickAdd.isRegistered, !GlobalHotKey.quickAdd.isSuspended {
-                    Label("Another app is using this shortcut. Pick a different one.", icon: "exclamationmark.triangle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                    SettingsNote(text: "Another app is using this shortcut. Pick a different one.")
                 }
-                LabeledContent {
+                SettingsRow("Adds to your Inbox", icon: "tray",
+                            detail: "A note called “Inbox”, or another from the pane’s menu.",
+                            info: "⌘↩ adds a task and keeps the pane open.") {
                     Button("Show Quick Add") { QuickAddController.shared.show() }
-                } label: {
-                    SettingsControlLabel("Adds to your Inbox",
-                                         detail: "A note called “Inbox”. Pick another note from the pane’s menu. ⌘↩ adds a task and keeps the pane open.")
                 }
             }
 
-            Section("Writing tasks") {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("A task is any checklist line in any note. Add these after its words:")
-                        .font(.callout)
-                    Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
-                        syntax("@tomorrow, @fri 3pm, @nov 20", "When it's due. Becomes a date as you type.")
-                        syntax("@every week, @every monday", "Repeats; checking it off makes the next one.")
-                        syntax("!1  !2  !3", "Priority, 1 highest.")
-                        syntax("#tag", "Tags, to filter by.")
-                        syntax("~45m", "How long it takes.")
-                        syntax("[tasks #work due:week]", "On its own line: a live list of matching tasks.")
-                    }
+            SettingsSection("Writing tasks", icon: "checklist",
+                            footer: "A task is any checklist line in any note. Add these after its words.") {
+                Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 10) {
+                    syntax("@tomorrow, @fri 3pm", "When it's due. Becomes a date as you type.")
+                    syntax("@every monday", "Repeats; checking it off makes the next one.")
+                    syntax("!1  !2  !3", "Priority, 1 highest.")
+                    syntax("#tag", "Tags, to filter by.")
+                    syntax("~45m", "How long it takes.")
+                    syntax("[tasks #work due:week]", "On its own line: a live list of matching tasks.")
                 }
-                .padding(.vertical, 4)
+                .padding(SettingsStyle.rowPadding)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -53,11 +47,16 @@ struct TasksPane: View {
     private func syntax(_ code: String, _ meaning: String) -> some View {
         GridRow {
             Text(code)
-                .font(.system(size: 12, design: .monospaced))
+                .font(.system(size: 11.5, design: .monospaced))
+                .foregroundStyle(Palette.label)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
                 .textSelection(.enabled)
             Text(meaning)
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 12))
+                .foregroundStyle(Palette.secondaryLabel)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

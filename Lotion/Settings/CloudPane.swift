@@ -29,34 +29,43 @@ struct CloudPane: View {
 
     var body: some View {
         SettingsPage {
-            Section {
-                TextField(text: $workerURL, prompt: Text("https://lotion-share.you.workers.dev")) {
-                    SettingsControlLabel("Worker URL", detail: "Where your Lotion Share worker runs.")
+            SettingsSection("Your worker", icon: "globe") {
+                SettingsRow("Worker URL", icon: "link", detail: "Where your Lotion Share worker runs.") {
+                    TextField("Worker URL", text: $workerURL, prompt: Text("https://lotion-share.you.workers.dev"))
+                        .labelsHidden()
+                        .textFieldStyle(.roundedBorder)
+                        .textContentType(.URL)
+                        .autocorrectionDisabled()
+                        .frame(minWidth: 150, idealWidth: 250, maxWidth: 250)
+                        .onSubmit { verify() }
                 }
-                .textContentType(.URL)
-                .autocorrectionDisabled()
-                .onSubmit { verify() }
-                SecureField(text: $token, prompt: Text("Paste your token")) {
-                    SettingsControlLabel("Token", detail: "Kept in your Keychain.")
+                SettingsRow("Token", icon: "key", detail: "Kept in your Keychain.") {
+                    SecureField("Token", text: $token, prompt: Text("Paste your token"))
+                        .labelsHidden()
+                        .textFieldStyle(.roundedBorder)
+                        .frame(minWidth: 150, idealWidth: 250, maxWidth: 250)
+                        .onChange(of: token) { _, value in Keychain.save(value) }
+                        .onSubmit { verify() }
                 }
-                .onChange(of: token) { _, value in Keychain.save(value) }
-                .onSubmit { verify() }
-                LabeledContent {
-                    Button("Verify Connection") { verify() }
-                        .disabled(status == .checking || CloudSettings.normalizedURL(workerURL) == nil || token.isEmpty)
-                } label: {
+                HStack(alignment: .top, spacing: SettingsStyle.chipGap) {
+                    SettingsIcon(statusIcon)
                     statusLabel
+                        .frame(minHeight: SettingsStyle.chip, alignment: .leading)
+                    Spacer(minLength: 16)
+                    Button("Verify") { verify() }
+                        .disabled(status == .checking || CloudSettings.normalizedURL(workerURL) == nil || token.isEmpty)
+                        .frame(minHeight: SettingsStyle.chip)
                 }
-            } header: {
-                Text("Your Worker")
+                .padding(SettingsStyle.rowPadding)
             }
 
-            Section {
+            SettingsSection("Set up or update", icon: "wrench.and.screwdriver") {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Publishing runs on your own Cloudflare account, free. Lotion doesn’t run a server, so your notes stay yours.")
-                    Text("Copy this prompt and paste it into a coding agent, like Claude Code, Codex or OpenCode. It forks or clones [Lotion Share](\(CloudSettings.templateRepository.absoluteString)), deploys it with D1 and R2, and gives you the URL and token to paste above. Run it again any time to update.")
-                        .foregroundStyle(.secondary)
-                    HStack(spacing: 8) {
+                        .foregroundStyle(Palette.label)
+                    Text("Paste this prompt into a coding agent, like Claude Code, Codex or OpenCode. It forks or clones [Lotion Share](\(CloudSettings.templateRepository.absoluteString)), deploys it with D1 and R2, and gives you the URL and token to paste above. Run it again any time to update.")
+                        .foregroundStyle(Palette.secondaryLabel)
+                    HStack(spacing: 10) {
                         Button {
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(CloudSettings.setupPrompt, forType: .string)
@@ -73,50 +82,66 @@ struct CloudPane: View {
                         Button(showsPrompt ? "Hide Prompt" : "Show Prompt") { showsPrompt.toggle() }
                             .buttonStyle(.link)
                     }
+                    .padding(.top, 2)
                     if showsPrompt {
                         Text(CloudSettings.setupPrompt)
-                            .font(.callout.monospaced())
+                            .font(.system(size: 11, design: .monospaced))
                             .textSelection(.enabled)
                             .padding(10)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 8))
+                            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                 }
+                .font(.system(size: 12))
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.vertical, 4)
-            } header: {
-                Text("Set Up or Update")
+                .padding(SettingsStyle.rowPadding)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             if case .connected = status {
-                Section {
+                SettingsSection("Published notes", icon: "square.and.arrow.up") {
                     if notes.isEmpty {
                         Text("Nothing published yet. Use the Share button in a note’s toolbar.")
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 12))
+                            .foregroundStyle(Palette.secondaryLabel)
+                            .padding(SettingsStyle.rowPadding)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     ForEach(notes) { note in
-                        LabeledContent {
+                        SettingsRow(note.title, icon: "doc.text",
+                                    detail: "Updated \(note.updatedAt.formatted(.relative(presentation: .named)))") {
                             HStack(spacing: 6) {
                                 Button("Open") { NSWorkspace.shared.open(note.url) }
                                 Button("Unpublish", role: .destructive) { unpublish(note) }
                                     .disabled(unpublishing.contains(note.id))
                             }
-                        } label: {
-                            SettingsControlLabel(note.title, detail: "Updated \(note.updatedAt.formatted(.relative(presentation: .named)))")
                         }
                     }
-                } header: {
-                    Text("Published Notes")
                 }
             }
         }
         .task { if CloudSettings.isConfigured { verify() } }
     }
 
+    private var statusIcon: String {
+        switch status {
+        case .connected: "checkmark.circle"
+        case .failed: "exclamationmark.triangle"
+        default: "cloud"
+        }
+    }
+
     @ViewBuilder private var statusLabel: some View {
         switch status {
         case .idle:
-            SettingsControlLabel("Connection", detail: "Check the URL and token work.")
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Connection")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Palette.label)
+                Text("Check the URL and token work.")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(Palette.secondaryLabel)
+            }
         case .checking:
             HStack(spacing: 8) {
                 ProgressView().controlSize(.small)
@@ -124,25 +149,27 @@ struct CloudPane: View {
             }
         case .connected(let info, let latest):
             VStack(alignment: .leading, spacing: 2) {
-                Label("Connected", icon: "checkmark.circle.fill")
+                Text("Connected")
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.green)
                 if let latest, info.version.isOlderVersion(than: latest) {
                     Text("Lotion Share \(info.version) · Version \(latest) is out. Run the setup prompt again to update.")
-                        .font(.caption)
+                        .font(.system(size: 11.5))
                         .foregroundStyle(.orange)
                 } else {
                     Text("Lotion Share \(info.version) · \(info.notes == 1 ? "1 published note" : "\(info.notes) published notes")")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(Palette.secondaryLabel)
                 }
             }
         case .failed(let message):
             VStack(alignment: .leading, spacing: 2) {
-                Label("Not connected", icon: "exclamationmark.triangle.fill")
+                Text("Not connected")
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.orange)
                 Text(message)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(Palette.secondaryLabel)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

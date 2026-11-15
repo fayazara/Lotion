@@ -2,10 +2,11 @@
 //  SettingsView.swift
 //  Lotion
 //
-//  Settings, in panes down a sidebar, built like Screendrop's: native grouped
-//  forms, a title and a line of detail on every row, and choices drawn as
-//  what they look like — appearance as little windows, themes as little
-//  notes, spacing as lines. Every change applies live.
+//  Settings, in panes down a sidebar. Each pane is a page of quiet cards
+//  (see SettingsKit): an icon, a title and a line of detail on every row,
+//  and choices drawn as what they look like — appearance as little
+//  windows, themes as little pages, spacing as lines. Every change applies
+//  live.
 //
 
 import AppKit
@@ -31,11 +32,11 @@ enum SettingsPane: String, CaseIterable, Identifiable {
 
     var symbol: String {
         switch self {
-        case .appearance: "paintpalette.fill"
+        case .appearance: "paintbrush"
         case .editor: "textformat"
         case .tasks: "checklist"
         case .quickNote: "note.text"
-        case .media: "photo.fill.on.rectangle.fill"
+        case .media: "photo"
         case .cloud: "cloud.fill"
         case .agents: "sparkles"
         case .updates: "arrow.triangle.2.circlepath"
@@ -58,8 +59,12 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         shared?.window?.makeKeyAndOrderFront(nil)
     }
 
+    /// Wide enough for the widest row (Text width's four pictures) beside the
+    /// sidebar, so no pane ever has to squeeze or wrap its choices.
+    static let minimum = NSSize(width: 800, height: 540)
+
     private init() {
-        let window = NSWindow(contentRect: NSRect(origin: .zero, size: CGSize(width: 720, height: 560)),
+        let window = NSWindow(contentRect: NSRect(origin: .zero, size: CGSize(width: SettingsWindowController.minimum.width + 20, height: 620)),
                               styleMask: [.titled, .closable, .resizable, .miniaturizable, .fullSizeContentView],
                               backing: .buffered, defer: false)
         super.init(window: window)
@@ -69,8 +74,14 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         window.toolbarStyle = .automatic
         window.animationBehavior = .none
         window.isMovableByWindowBackground = false
+        window.contentMinSize = Self.minimum
         window.setFrameAutosaveName("SettingsWindow")
-        window.minSize = NSSize(width: 640, height: 460)
+        // A frame saved before the minimum grew can still be smaller than it.
+        let content = window.contentRect(forFrameRect: window.frame).size
+        if content.width < Self.minimum.width || content.height < Self.minimum.height {
+            window.setContentSize(NSSize(width: max(content.width, Self.minimum.width),
+                                         height: max(content.height, Self.minimum.height)))
+        }
         window.contentViewController = NSHostingController(rootView: SettingsView())
         window.center()
         window.delegate = self
@@ -128,7 +139,7 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .navigationSplitViewStyle(.balanced)
-        .frame(minWidth: 640, minHeight: 460)
+        .frame(minWidth: SettingsWindowController.minimum.width, minHeight: SettingsWindowController.minimum.height)
         .interfaceFont(interfaceFont)
         .toolbar {
             ToolbarItemGroup(placement: .navigation) {
@@ -167,198 +178,6 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - Building blocks
-
-/// One pane: a native grouped form, as a Mac settings window should be.
-struct SettingsPage<Content: View>: View {
-    @ViewBuilder var content: () -> Content
-
-    var body: some View {
-        Form { content() }
-            .formStyle(.grouped)
-            .scrollContentBackground(.hidden)
-            .contentMargins(.top, 8, for: .scrollContent)
-            .scrollEdgeEffectStyle(.soft, for: .all)
-    }
-}
-
-/// A row's title with a line of detail under it, free to wrap.
-struct SettingsControlLabel: View {
-    let title: String
-    let detail: String?
-
-    init(_ title: String, detail: String? = nil) {
-        self.title = title
-        self.detail = detail
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-            if let detail {
-                Text(detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-    }
-}
-
-/// A row of pictured choices under its label.
-private struct ChoiceRow<Tiles: View>: View {
-    let title: String
-    let detail: String?
-    @ViewBuilder let tiles: () -> Tiles
-
-    init(_ title: String, detail: String? = nil, @ViewBuilder tiles: @escaping () -> Tiles) {
-        self.title = title
-        self.detail = detail
-        self.tiles = tiles
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SettingsControlLabel(title, detail: detail)
-            tiles()
-        }
-        .padding(.vertical, 2)
-    }
-}
-
-/// A choice drawn as a miniature over its name, like Screendrop's layout
-/// tiles: a hairline that firms up on hover, and an accent ring that sits a
-/// hair outside the picked one.
-private struct ChoiceTile<Picture: View>: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-    @ViewBuilder let picture: () -> Picture
-
-    @State private var isHovering = false
-
-    private static var radius: CGFloat { 7 }
-    private static var ringGap: CGFloat { 2 }
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 5) {
-                picture()
-                    .clipShape(RoundedRectangle(cornerRadius: Self.radius, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
-                            .strokeBorder(Color.primary.opacity(isHovering && !isSelected ? 0.16 : 0.07), lineWidth: 0.5)
-                    }
-                    .padding(Self.ringGap)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: Self.radius + Self.ringGap, style: .continuous)
-                            .strokeBorder(Color.accentColor, lineWidth: 2)
-                            .opacity(isSelected ? 1 : 0)
-                    }
-                Text(title)
-                    .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
-                    .foregroundStyle(isSelected ? Palette.label : Palette.secondaryLabel)
-                    .lineLimit(1)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(TileButtonStyle())
-        .onHover { isHovering = $0 }
-        .accessibilityLabel(title)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-}
-
-private struct TileButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.smooth(duration: 0.18), value: configuration.isPressed)
-    }
-}
-
-/// Screendrop's miniature: a flat stage with one window on it — traffic
-/// lights (lit on the picked tile), then whatever the window shows.
-private struct Miniature<Content: View>: View {
-    let isDark: Bool
-    let isSelected: Bool
-    var window: Color?
-    @ViewBuilder let content: (_ unit: CGFloat, _ width: CGFloat) -> Content
-
-    var body: some View {
-        GeometryReader { proxy in
-            let size = proxy.size
-            let unit = min(size.width, size.height)
-            let padding = min(max((unit * 0.13).rounded(), 4), 9)
-            let stage = CGRect(origin: .zero, size: size).insetBy(dx: padding, dy: padding)
-            let radius = max(2, Radius.thumbnail - padding + 4)
-            let dot = max(2.5, unit * 0.062)
-            let inset = max(dot * 1.1, (unit * 0.085).rounded())
-            let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
-            ZStack(alignment: .topLeading) {
-                isDark ? Color(white: 0.15) : Color(white: 0.935)
-                ZStack(alignment: .topLeading) {
-                    shape.fill(window ?? (isDark ? Color(white: 0.25) : Color.white))
-                    TrafficLights(dot: dot, isLit: isSelected, isDark: isDark)
-                        .offset(x: inset, y: inset)
-                    content(unit, stage.width - inset * 2)
-                        .offset(x: inset, y: inset + dot + unit * 0.1)
-                }
-                .frame(width: stage.width, height: stage.height, alignment: .topLeading)
-                .clipShape(shape)
-                .overlay { shape.strokeBorder(Color.primary.opacity(isDark ? 0.1 : 0.06), lineWidth: 0.5) }
-                .shadow(color: .black.opacity(isDark ? 0.22 : 0.05), radius: 1, y: 0.5)
-                .offset(x: stage.minX, y: stage.minY)
-            }
-            .environment(\.colorScheme, isDark ? .dark : .light)
-        }
-    }
-}
-
-/// Close, minimize and zoom: macOS's colors on the picked tile, grey on the rest.
-private struct TrafficLights: View {
-    let dot: CGFloat
-    let isLit: Bool
-    let isDark: Bool
-
-    private static let colors = [
-        Color(red: 1, green: 0.373, blue: 0.341),
-        Color(red: 0.996, green: 0.737, blue: 0.18),
-        Color(red: 0.157, green: 0.784, blue: 0.251),
-    ]
-
-    var body: some View {
-        HStack(spacing: dot * 0.62) {
-            ForEach(Self.colors.indices, id: \.self) { index in
-                Circle()
-                    .fill(isLit ? Self.colors[index] : Color.primary.opacity(isDark ? 0.22 : 0.15))
-                    .frame(width: dot, height: dot)
-            }
-        }
-    }
-}
-
-/// A heading and lines of text, the way a miniature window shows a note.
-private struct TextLines: View {
-    let unit: CGFloat
-    let width: CGFloat
-    var heading: Color?
-    var line: Color?
-    var spacing: CGFloat = 1.2
-    var count = 2
-
-    var body: some View {
-        let height = max(1.5, unit * 0.042)
-        VStack(alignment: .leading, spacing: height * spacing) {
-            Capsule().fill(heading ?? Color.primary.opacity(0.25)).frame(width: width * 0.5, height: height * 1.4)
-            ForEach(0..<count, id: \.self) { index in
-                Capsule().fill(line ?? Color.primary.opacity(0.12))
-                    .frame(width: width * (index == count - 1 ? 0.64 : 0.9), height: height)
-            }
-        }
-    }
-}
-
 // MARK: - Appearance
 
 private struct AppearancePane: View {
@@ -369,40 +188,140 @@ private struct AppearancePane: View {
 
     var body: some View {
         SettingsPage {
-            Section("Appearance") {
-                ChoiceRow("Mode", detail: "Light, dark, or following your Mac.") {
-                    HStack(spacing: 12) {
-                        ForEach(AppearanceMode.allCases) { mode in
-                            ChoiceTile(title: mode.title, isSelected: appearance == mode, action: { appearance = mode }) {
+            SettingsSection("Light and dark", icon: "circle.lefthalf.filled") {
+                SettingsRow("Appearance", icon: "circle.lefthalf.filled",
+                            detail: "Light, dark, or whatever the Mac is doing.") {
+                    EmptyView()
+                } below: {
+                    ChoiceTiles {
+                        ForEach([AppearanceMode.light, .dark, .system]) { mode in
+                            ChoiceTile(title: mode.title, isSelected: appearance == mode, width: 112, aspect: 16 / 11,
+                                       action: { appearance = mode }) {
                                 AppearancePicture(mode: mode, isSelected: appearance == mode)
-                                    .aspectRatio(16 / 11, contentMode: .fit)
                             }
                         }
                     }
                 }
-                FontPicker(selection: $interfaceFont, families: FontChoice.installedFamilies) {
-                    SettingsControlLabel("Interface font", detail: "The sidebar, toolbar and inspector.")
+            }
+
+            SettingsSection("Theme", icon: "paintpalette",
+                            footer: "A sun or a moon on a theme means it has only that side, and keeps it whatever the Mac is doing.") {
+                SettingsRow("Page", icon: "doc.text", detail: "The page you write on, and the code on it.") {
+                    // No name here: the picked swatch already says it, and a
+                    // name that changes width would rewrap the detail.
+                    EmptyView()
+                } below: {
+                    ThemeGrid(theme: $theme, isDark: colorScheme == .dark)
                 }
             }
 
-            Section {
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-                    ForEach(LotionTheme.allCases) { option in
-                        ThemeCard(theme: option, isDark: colorScheme == .dark, isSelected: theme == option) {
-                            theme = option
-                        }
-                    }
+            SettingsSection("Window", icon: "macwindow") {
+                SettingsRow("Interface font", icon: "textformat",
+                            detail: "The sidebar, toolbar and inspector.") {
+                    FontPicker(selection: $interfaceFont, families: FontChoice.installedFamilies)
                 }
-                .padding(.vertical, 4)
-            } header: {
-                Text("Theme")
-            } footer: {
-                Text("The page you write on. A sun and a moon mean the theme follows light and dark; one alone means it keeps that side.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+    }
+}
+
+/// Every theme as a small swatch of its page. Lotion's own come first; the
+/// rest wait behind "Show all" so the pane stays short.
+private struct ThemeGrid: View {
+    @Binding var theme: LotionTheme
+    let isDark: Bool
+    @State private var showsAll = false
+
+    private static let collapsedCount = 12
+
+    private var visible: [LotionTheme] {
+        let all = LotionTheme.allCases
+        guard !showsAll else { return all }
+        var shown = Array(all.prefix(Self.collapsedCount))
+        // The theme in use is always in view.
+        if !shown.contains(theme) { shown[shown.count - 1] = theme }
+        return shown
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 70, maximum: 92), spacing: 10, alignment: .top)],
+                      alignment: .leading, spacing: 12) {
+                ForEach(visible) { option in
+                    ThemeSwatch(theme: option, isDark: isDark, isSelected: theme == option) { theme = option }
+                }
+            }
+            Button {
+                withAnimation(.smooth(duration: 0.25)) { showsAll.toggle() }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(showsAll ? "Show fewer" : "Show all \(LotionTheme.allCases.count) themes")
+                    Image(icon: "chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
+                        .rotationEffect(.degrees(showsAll ? 180 : 0))
+                }
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Palette.secondaryLabel)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+
+/// A theme as a scrap of its page: "Aa" in its heading color over a line of
+/// text and a dash of its accent.
+private struct ThemeSwatch: View {
+    let theme: LotionTheme
+    let isDark: Bool
+    let isSelected: Bool
+    let action: () -> Void
+
+    @State private var isHovering = false
+
+    var body: some View {
+        let palette = theme.palette(dark: isDark)
+        let text = Color(nsColor: palette.text)
+        let heading = Color(nsColor: palette.colorsHeadings ? palette.heading : palette.text)
+        Button(action: action) {
+            VStack(spacing: 6) {
+                ZStack(alignment: .topLeading) {
+                    Color(nsColor: palette.background)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Aa")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(heading)
+                        HStack(spacing: 3) {
+                            Capsule().fill(text.opacity(0.45)).frame(width: 20, height: 3)
+                            Capsule().fill(Color(nsColor: palette.accent)).frame(width: 10, height: 3)
+                        }
+                    }
+                    .padding(.leading, 8)
+                    .padding(.top, 6)
+                    if theme.hasLight != theme.hasDark {
+                        Image(icon: theme.hasDark ? "moon.fill" : "sun.max.fill")
+                            .font(.system(size: 8, weight: .semibold))
+                            .foregroundStyle(Color(nsColor: palette.secondary))
+                            .frame(maxWidth: .infinity, alignment: .topTrailing)
+                            .padding(6)
+                    }
+                }
+                .frame(height: 48)
+                .selectionRing(isSelected: isSelected, isHovering: isHovering, radius: 8)
+                Text(theme.name)
+                    .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? Palette.label : Palette.secondaryLabel)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                    .truncationMode(.tail)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle())
+        .onHover { isHovering = $0 }
+        .help(theme.name)
+        .accessibilityLabel(theme.name)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
@@ -415,9 +334,9 @@ private struct AppearancePicture: View {
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                FauxWindow(isDark: mode == .dark, isSelected: isSelected)
+                FauxWindow(isDark: mode == .dark)
                 if mode == .system {
-                    FauxWindow(isDark: true, isSelected: isSelected)
+                    FauxWindow(isDark: true)
                         .mask(alignment: .trailing) { Rectangle().frame(width: proxy.size.width / 2) }
                 }
             }
@@ -425,136 +344,47 @@ private struct AppearancePicture: View {
     }
 }
 
-/// Screendrop's stage with Lotion on it: the sidebar with its rows, and a
-/// note with a heading, lines and a checklist.
+/// Lotion in miniature: a sidebar with a few rows, and a note with a
+/// heading and lines.
 private struct FauxWindow: View {
     let isDark: Bool
-    let isSelected: Bool
 
     var body: some View {
         GeometryReader { proxy in
             let size = proxy.size
             let unit = min(size.width, size.height)
-            let padding = min(max((unit * 0.12).rounded(), 4), 10)
-            let window = CGSize(width: size.width - padding * 2, height: size.height - padding)
-            let line = max(1.5, unit * 0.04)
-            let dot = max(2.5, unit * 0.055)
-            let sidebar = window.width * 0.28
-            let shape = UnevenRoundedRectangle(topLeadingRadius: 7, topTrailingRadius: 7, style: .continuous)
+            let line = max(1.5, unit * 0.045)
+            let sidebar = size.width * 0.3
             let ink = isDark ? Color.white : Color.black
-            ZStack(alignment: .topLeading) {
-                isDark ? Color(white: 0.15) : Color(white: 0.935)
-                HStack(spacing: 0) {
-                    // Sidebar: the lights, then a few rows, one picked.
-                    VStack(alignment: .leading, spacing: line * 1.9) {
-                        TrafficLights(dot: dot, isLit: isSelected, isDark: isDark)
-                            .padding(.bottom, line)
-                        ForEach(0..<5, id: \.self) { index in
-                            Capsule()
-                                .fill(index == 1 ? Color.accentColor.opacity(0.9) : ink.opacity(isDark ? 0.2 : 0.14))
-                                .frame(width: sidebar * (index == 1 ? 0.62 : [0.5, 0, 0.56, 0.42, 0.48][index]), height: line)
-                        }
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: line * 1.8) {
+                    ForEach(0..<3, id: \.self) { index in
+                        Capsule()
+                            .fill(ink.opacity(isDark ? (index == 0 ? 0.45 : 0.22) : (index == 0 ? 0.35 : 0.16)))
+                            .frame(width: sidebar * [0.55, 0.45, 0.5][index], height: line)
                     }
-                    .padding(.top, dot * 1.6)
-                    .padding(.leading, dot * 1.6)
-                    .frame(width: sidebar, alignment: .topLeading)
-                    .frame(maxHeight: .infinity, alignment: .top)
-                    .background(isDark ? Color(white: 0.21) : Color(white: 0.965))
-                    // The note
-                    VStack(alignment: .leading, spacing: line * 1.25) {
-                        Capsule().fill(ink.opacity(isDark ? 0.75 : 0.7)).frame(width: window.width * 0.24, height: line * 1.5)
-                        Capsule().fill(ink.opacity(isDark ? 0.22 : 0.13)).frame(width: window.width * 0.5, height: line)
-                        Capsule().fill(ink.opacity(isDark ? 0.22 : 0.13)).frame(width: window.width * 0.38, height: line)
-                        ForEach(0..<3, id: \.self) { index in
-                            HStack(spacing: line * 1.4) {
-                                RoundedRectangle(cornerRadius: line * 0.6, style: .continuous)
-                                    .fill(index < 2 ? Color.accentColor : .clear)
-                                    .overlay {
-                                        if index == 2 {
-                                            RoundedRectangle(cornerRadius: line * 0.6, style: .continuous)
-                                                .strokeBorder(ink.opacity(0.3), lineWidth: 0.75)
-                                        }
-                                    }
-                                    .frame(width: line * 2.4, height: line * 2.4)
-                                Capsule().fill(ink.opacity(isDark ? 0.22 : 0.13)).frame(width: window.width * 0.2, height: line)
-                            }
-                        }
-                    }
-                    .padding(.top, dot * 2.2)
-                    .padding(.leading, dot * 2.2)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .background(isDark ? Color(white: 0.12) : Color.white)
                 }
-                .frame(width: window.width, height: window.height)
-                .clipShape(shape)
-                .overlay { shape.strokeBorder(ink.opacity(isDark ? 0.12 : 0.08), lineWidth: 0.5) }
-                .shadow(color: .black.opacity(isDark ? 0.3 : 0.08), radius: 2, y: 1)
-                .offset(x: padding, y: padding)
+                .padding(.top, unit * 0.2)
+                .padding(.leading, unit * 0.1)
+                .frame(width: sidebar, alignment: .topLeading)
+                .frame(maxHeight: .infinity, alignment: .top)
+                .background(isDark ? Color(white: 0.2) : Color(white: 0.93))
+
+                VStack(alignment: .leading, spacing: line * 1.4) {
+                    Capsule().fill(ink.opacity(isDark ? 0.55 : 0.45)).frame(width: size.width * 0.3, height: line * 1.3)
+                    Capsule().fill(ink.opacity(isDark ? 0.22 : 0.14)).frame(width: size.width * 0.42, height: line)
+                    Capsule().fill(ink.opacity(isDark ? 0.22 : 0.14)).frame(width: size.width * 0.34, height: line)
+                }
+                .padding(.top, unit * 0.2)
+                .padding(.leading, unit * 0.12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .background(isDark ? Color(white: 0.11) : Color.white)
+                .clipShape(UnevenRoundedRectangle(topLeadingRadius: 5, bottomLeadingRadius: 5, style: .continuous))
+                .padding([.top, .bottom, .trailing], unit * 0.07)
             }
+            .background(isDark ? Color(white: 0.2) : Color(white: 0.93))
             .environment(\.colorScheme, isDark ? .dark : .light)
         }
-    }
-}
-
-/// A theme as a card of its page: its name in its heading color, and a
-/// sentence with bold and a link. Sun and moon say which sides it has.
-private struct ThemeCard: View {
-    let theme: LotionTheme
-    let isDark: Bool
-    let isSelected: Bool
-    let action: () -> Void
-
-    @State private var isHovering = false
-
-    var body: some View {
-        let palette = theme.palette(dark: isDark)
-        let text = Color(nsColor: palette.text)
-        let link = Color(nsColor: palette.accent)
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: Space.s) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(theme.name)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(Color(nsColor: palette.heading == palette.text ? palette.text : palette.heading))
-                    Spacer(minLength: Space.s)
-                    HStack(spacing: 5) {
-                        if theme.hasLight { sideMark("sun.max.fill", inUse: !palette.isDark, palette: palette) }
-                        if theme.hasDark { sideMark("moon.fill", inUse: palette.isDark, palette: palette) }
-                    }
-                }
-                Text("Lorem ipsum \(Text("dolor sit amet").bold()), consectetur adipiscing elit. Mauris iaculis \(Text("semper").foregroundStyle(link)) pharetra.")
-                    .font(.system(size: 11.5))
-                    .lineSpacing(2)
-                    .foregroundStyle(text)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(Color(nsColor: palette.background), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(isHovering && !isSelected ? 0.2 : 0.1), lineWidth: 0.5)
-            }
-            .padding(2)
-            .overlay {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .strokeBorder(Color.accentColor, lineWidth: 2)
-                    .opacity(isSelected ? 1 : 0)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(TileButtonStyle())
-        .onHover { isHovering = $0 }
-        .accessibilityLabel(theme.name)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-
-    /// The side in use is in the theme's accent; the other is dim.
-    private func sideMark(_ symbol: String, inUse: Bool, palette: ThemePalette) -> some View {
-        Image(icon: symbol)
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundStyle(inUse ? Color(nsColor: palette.accent) : Color(nsColor: palette.marker))
     }
 }
 
@@ -576,90 +406,103 @@ private struct EditorPane: View {
         let palette = theme.palette(dark: colorScheme == .dark)
         let isDark = colorScheme == .dark
         SettingsPage {
-            Section("Opening") {
-                Picker(selection: $launchView) {
-                    ForEach(LaunchView.allCases) { Text($0.title).tag($0) }
-                } label: {
-                    SettingsControlLabel("When Lotion opens", detail: "Start on Home, or pick up in the note you were last in.")
-                }
-            }
-
-            Section("Type") {
+            SettingsSection("Type", icon: "textformat") {
                 TypePreview(palette: palette, noteFont: noteFont, size: noteFontSize, lineSpacing: lineSpacing, codeFont: codeFont)
-                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
                     }
-                    .padding(.vertical, 4)
+                    .padding(8)
                     .accessibilityHidden(true)
-                FontPicker(selection: $noteFont, families: FontChoice.installedFamilies) {
-                    SettingsControlLabel("Note font", detail: "The sample above follows every change.")
+                SettingsRow("Note font", icon: "textformat", detail: "The sample above follows every change.") {
+                    FontPicker(selection: $noteFont, families: FontChoice.installedFamilies)
                 }
-                LabeledContent {
+                SettingsRow("Size", icon: "plus.magnifyingglass") {
                     HStack(spacing: 10) {
                         Slider(value: $noteFontSize, in: 12...24, step: 1)
-                            .frame(width: 160)
+                            .frame(width: 140)
                             .accessibilityLabel("Size")
                             .accessibilityValue("\(Int(noteFontSize)) points")
                         Text("\(Int(noteFontSize)) pt")
+                            .font(.system(size: 12))
                             .monospacedDigit()
-                            .foregroundStyle(.secondary)
-                            .frame(width: 40, alignment: .trailing)
+                            .foregroundStyle(Palette.secondaryLabel)
+                            .frame(width: 34, alignment: .trailing)
                     }
-                } label: {
-                    Text("Size")
                 }
-                FontPicker(selection: $codeFont, families: FontChoice.monospacedFamilies, designs: [FontChoice.mono]) {
-                    SettingsControlLabel("Code font", detail: "Code blocks and inline code.")
+                SettingsRow("Code font", icon: "chevron.left.forwardslash.chevron.right", detail: "Code blocks and inline code.") {
+                    FontPicker(selection: $codeFont, families: FontChoice.monospacedFamilies, designs: [FontChoice.mono])
                 }
             }
 
-            Section("Layout") {
-                ChoiceRow("Line spacing", detail: "Room between the lines of a paragraph.") {
-                    HStack(spacing: 12) {
+            SettingsSection("Layout", icon: "square.grid.2x2") {
+                SettingsRow("Line spacing", icon: "list.bullet", detail: "Room between the lines of a paragraph.") {
+                    EmptyView()
+                } below: {
+                    ChoiceTiles {
                         ForEach(LineSpacing.allCases) { option in
                             ChoiceTile(title: option.title, isSelected: lineSpacing == option, action: { lineSpacing = option }) {
-                                Miniature(isDark: isDark, isSelected: lineSpacing == option) { unit, width in
-                                    TextLines(unit: unit, width: width, spacing: 1.2 + (option.multiple - 1.4) * 9, count: 3)
+                                Miniature(isDark: isDark) { unit, width in
+                                    TextLines(unit: unit, width: width, gap: option.pictureGap, count: 3)
                                 }
-                                .aspectRatio(16 / 10, contentMode: .fit)
                             }
                         }
                     }
                 }
-                ChoiceRow("Text width", detail: "How wide the column of text runs in a wide window.") {
-                    HStack(spacing: 12) {
+                SettingsRow("Text width", icon: "arrow.up.left.and.arrow.down.right",
+                            detail: "How wide the text runs in a wide window.") {
+                    EmptyView()
+                } below: {
+                    ChoiceTiles {
                         ForEach(ReadableWidth.allCases) { option in
                             ChoiceTile(title: option.title, isSelected: readableWidth == option, action: { readableWidth = option }) {
-                                Miniature(isDark: isDark, isSelected: readableWidth == option) { unit, width in
+                                Miniature(isDark: isDark) { unit, width in
                                     TextLines(unit: unit, width: width * option.fraction, count: 3)
                                         .frame(width: width, alignment: .center)
                                 }
-                                .aspectRatio(16 / 10, contentMode: .fit)
                             }
                         }
                     }
                 }
-                ChoiceRow("Tables", detail: "As wide as what's in them, or across the whole column.") {
-                    HStack(spacing: 12) {
+                SettingsRow("Tables", icon: "tablecells", detail: "As wide as what's in them, or across the whole column.") {
+                    EmptyView()
+                } below: {
+                    ChoiceTiles {
                         ForEach(TableWidth.allCases) { option in
                             ChoiceTile(title: option.title, isSelected: tableWidth == option, action: { tableWidth = option }) {
-                                Miniature(isDark: isDark, isSelected: tableWidth == option) { unit, width in
+                                Miniature(isDark: isDark) { unit, width in
                                     TablePicture(unit: unit, width: option == .full ? width : width * 0.55)
                                 }
-                                .aspectRatio(16 / 10, contentMode: .fit)
                             }
                         }
                     }
                 }
             }
 
-            Section("Writing") {
-                Toggle(isOn: $spellCheck) {
-                    SettingsControlLabel("Check spelling while typing", detail: "Underline words the system dictionary doesn't know.")
+            SettingsSection("Writing", icon: "pencil") {
+                SettingsToggle("Check spelling while typing", icon: "checkmark.circle",
+                               detail: "Underline words the dictionary doesn't know.", isOn: $spellCheck)
+                SettingsRow("When Lotion opens", icon: "house", detail: "Start on Home, Today, or the note you were last in.") {
+                    Picker("When Lotion opens", selection: $launchView) {
+                        ForEach(LaunchView.allCases) { Text($0.title).tag($0) }
+                    }
+                    .labelsHidden()
+                    .fixedSize()
                 }
             }
+        }
+    }
+}
+
+private extension LineSpacing {
+    /// Points between lines in the picture: even steps, so the three read
+    /// as tight, middle and loose.
+    var pictureGap: CGFloat {
+        switch self {
+        case .compact: 2
+        case .comfortable: 5
+        case .relaxed: 8
         }
     }
 }
@@ -676,7 +519,51 @@ private extension ReadableWidth {
     }
 }
 
+/// A flat page for a picture to sit on, in light or dark. The picture sits
+/// in the middle, top to bottom, so taller ones never touch an edge.
+private struct Miniature<Content: View>: View {
+    let isDark: Bool
+    @ViewBuilder let content: (_ unit: CGFloat, _ width: CGFloat) -> Content
 
+    var body: some View {
+        GeometryReader { proxy in
+            let size = proxy.size
+            let unit = min(size.width, size.height)
+            let inset = (unit * 0.2).rounded()
+            content(unit, size.width - inset * 2)
+                .padding(.leading, inset)
+                .frame(width: size.width, height: size.height, alignment: .leading)
+                .background(isDark ? Color(white: 0.13) : Color.white)
+                .environment(\.colorScheme, isDark ? .dark : .light)
+        }
+    }
+}
+
+/// A heading and lines of text, the way a miniature shows a note. Sizes
+/// are whole points so every gap renders the same; the heading keeps its
+/// own gap, and only the gaps between body lines follow `gap`.
+private struct TextLines: View {
+    let unit: CGFloat
+    let width: CGFloat
+    /// Room between body lines, in points.
+    var gap: CGFloat = 3
+    var count = 2
+
+    var body: some View {
+        let line = max(2, (unit * 0.04).rounded())
+        VStack(alignment: .leading, spacing: 0) {
+            Capsule().fill(Color.primary.opacity(0.35))
+                .frame(width: (width * 0.5).rounded(), height: line + 1)
+                .padding(.bottom, line * 2 + 1)
+            VStack(alignment: .leading, spacing: gap.rounded()) {
+                ForEach(0..<count, id: \.self) { index in
+                    Capsule().fill(Color.primary.opacity(0.14))
+                        .frame(width: (width * (index == count - 1 ? 0.64 : 0.9)).rounded(), height: line)
+                }
+            }
+        }
+    }
+}
 
 /// A small table: a header row and two rows, two columns.
 private struct TablePicture: View {
@@ -684,8 +571,8 @@ private struct TablePicture: View {
     let width: CGFloat
 
     var body: some View {
-        let row = max(6, unit * 0.13)
-        let line = max(1.5, unit * 0.035)
+        let row = max(6, unit * 0.15)
+        let line = max(1.5, unit * 0.04)
         VStack(spacing: 0) {
             ForEach(0..<3, id: \.self) { index in
                 HStack(spacing: 0) {
@@ -721,7 +608,7 @@ private struct TypePreview: View {
         VStack(alignment: .leading, spacing: Space.l) {
             Text("The quiet page")
                 .font(Font(heading))
-                .foregroundStyle(Color(nsColor: palette.text))
+                .foregroundStyle(Color(nsColor: palette.colorsHeadings ? palette.heading : palette.text))
             Text("Plain Markdown, kept in files you own. Write in blocks, \(Text("link to anything").foregroundStyle(Color(nsColor: palette.accent)).underline()), and drop in images.")
                 .font(Font(body))
                 .lineSpacing(max(0, size * lineSpacing.multiple - size * 1.2))
@@ -748,32 +635,26 @@ private struct MediaPane: View {
 
     var body: some View {
         SettingsPage {
-            Section {
-                LabeledContent {
-                    Label("Always on", icon: "checkmark")
-                        .foregroundStyle(.secondary)
-                } label: {
-                    SettingsControlLabel("Keep images from the web",
-                                         detail: "An image linked from the web is saved in the note’s folder the first time it shows, and opens from there after.")
+            SettingsSection("Images and videos", icon: "photo",
+                            footer: "Images and videos you add are copied into the note’s own folder, next to its Markdown.") {
+                SettingsRow("Keep images from the web", icon: "photo",
+                            detail: "Saved beside the note the first time they show.",
+                            info: "An image linked from the web is saved in the note’s folder the first time it shows, and opens from there after.") {
+                    Text("Always on")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Palette.secondaryLabel)
                 }
-                Toggle(isOn: $saveVideos) {
-                    SettingsControlLabel("Save videos for offline viewing",
-                                         detail: "Videos from the web play from the web. When this is on, each one is also saved in the note’s folder after it first plays. Videos can be large.")
-                }
-            } header: {
-                Text("Images and Videos")
-            } footer: {
-                Text("Images and videos you add are copied into the note’s own folder, next to its Markdown.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                SettingsToggle("Save videos for offline viewing", icon: "play.rectangle",
+                               detail: "Each one is saved beside the note after it first plays.",
+                               info: "Videos from the web play from the web. When this is on, each one is also saved in the note’s folder after it first plays. Videos can be large.",
+                               isOn: $saveVideos)
             }
 
-            Section("Links") {
-                Toggle(isOn: $linkPreviews) {
-                    SettingsControlLabel("Preview pages on hover",
-                                         detail: "Rest the pointer on a link to see the page. Each preview is kept for a week.")
-                }
+            SettingsSection("Links", icon: "link") {
+                SettingsToggle("Preview pages on hover", icon: "globe",
+                               detail: "Rest the pointer on a link to see the page.",
+                               info: "Each preview is kept for a week.",
+                               isOn: $linkPreviews)
             }
         }
     }
@@ -793,46 +674,16 @@ private struct UpdatesPane: View {
 
     var body: some View {
         SettingsPage {
-            Section {
-                LabeledContent {
+            SettingsSection("Version", icon: "info.circle") {
+                SettingsRow("Lotion \(version)", icon: "sparkles", detail: "New versions are published on GitHub.") {
                     Button("Check Now") { updater.checkForUpdates() }
                         .disabled(!updater.canCheckForUpdates)
-                } label: {
-                    SettingsControlLabel("Lotion \(version)",
-                                         detail: "New versions are published on GitHub.")
                 }
-                Toggle(isOn: Binding(get: { updater.automaticallyChecksForUpdates },
-                                     set: { updater.automaticallyChecksForUpdates = $0 })) {
-                    SettingsControlLabel("Check for updates automatically",
-                                         detail: "Lotion looks for a new version once a day and asks before installing it.")
-                }
+                SettingsToggle("Check automatically", icon: "arrow.clockwise",
+                               detail: "Once a day. Lotion asks before installing.",
+                               isOn: Binding(get: { updater.automaticallyChecksForUpdates },
+                                             set: { updater.automaticallyChecksForUpdates = $0 }))
             }
         }
     }
-}
-
-// MARK: - Fonts
-
-/// System designs first, then every installed family.
-private struct FontPicker<Label: View>: View {
-    @Binding var selection: String
-    let families: [String]
-    var designs: [String] = FontChoice.designs.map(\.id)
-    @ViewBuilder var label: () -> Label
-
-    var body: some View {
-        Picker(selection: $selection, label: label()) {
-            ForEach(designs, id: \.self) { Text(FontChoice.title(for: $0)).tag($0) }
-            Divider()
-            ForEach(families, id: \.self) { Text($0).tag($0) }
-            // Keep a saved family selectable even if it is no longer installed.
-            if !designs.contains(selection), !families.contains(selection) {
-                Text(selection).tag(selection)
-            }
-        }
-    }
-}
-
-private extension Color {
-    init(hex: UInt32) { self.init(nsColor: NSColor(hex: hex)) }
 }

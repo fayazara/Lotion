@@ -18,50 +18,44 @@ struct QuickNotePane: View {
 
     var body: some View {
         SettingsPage {
-            Section {
-                LabeledContent {
+            SettingsSection("Quick Note", icon: "note.text") {
+                SettingsRow("Shortcut", icon: "command",
+                            detail: "Opens the pane from any app.",
+                            info: "Press it again while typing in the pane to put it away.") {
                     ShortcutRecorder(shortcut: $shortcut)
-                } label: {
-                    SettingsControlLabel("Shortcut",
-                                         detail: "Opens the quick note pane from any app. Press it again while typing in the pane to put it away.")
                 }
                 if shortcut != nil, !GlobalHotKey.quickNote.isRegistered, !GlobalHotKey.quickNote.isSuspended {
-                    Label("Another app is using this shortcut. Pick a different one.", icon: "exclamationmark.triangle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                    SettingsNote(text: "Another app is using this shortcut. Pick a different one.")
                 }
-                Toggle(isOn: $keepOnTop) {
-                    SettingsControlLabel("Keep on top",
-                                         detail: "The pane floats above other windows, on every desktop and over full-screen apps.")
-                }
-                .onChange(of: keepOnTop) { _, value in QuickNoteController.shared.setKeepOnTop(value) }
-                LabeledContent {
+                SettingsToggle("Keep on top", icon: "square.stack",
+                               detail: "Floats above other windows, on every desktop.",
+                               info: "Including over full-screen apps.",
+                               isOn: $keepOnTop)
+                    .onChange(of: keepOnTop) { _, value in QuickNoteController.shared.setKeepOnTop(value) }
+                SettingsRow("Writes to your scratchpad", icon: "square.and.pencil",
+                            detail: "Each entry in the pane is an entry in the scratchpad.",
+                            info: "⌘N starts a new one, ⌘P finds an older one, and Esc puts the pane away.") {
                     Button("Show Quick Note") { QuickNoteController.shared.show() }
-                } label: {
-                    SettingsControlLabel("Writes to your scratchpad",
-                                         detail: "Each entry in the pane is an entry in the scratchpad. ⌘N starts a new one, ⌘P finds an older one, and Esc puts the pane away.")
                 }
             }
 
-            Section {
-                Toggle(isOn: $openAtLogin) {
-                    SettingsControlLabel("Open Lotion at login",
-                                         detail: "Lotion keeps running when its window is closed, so the shortcut works until you quit with ⌘Q.")
-                }
-                .onChange(of: openAtLogin) { _, value in
-                    guard value != LoginItem.isEnabled else { return }
-                    do {
-                        try LoginItem.set(value)
-                        loginError = nil
-                    } catch {
-                        loginError = error.localizedDescription
-                        openAtLogin = LoginItem.isEnabled
+            SettingsSection("Login", icon: "sunrise") {
+                SettingsToggle("Open Lotion at login", icon: "sunrise",
+                               detail: "So the shortcut is always there.",
+                               info: "Lotion keeps running when its window is closed, so the shortcut works until you quit with ⌘Q.",
+                               isOn: $openAtLogin)
+                    .onChange(of: openAtLogin) { _, value in
+                        guard value != LoginItem.isEnabled else { return }
+                        do {
+                            try LoginItem.set(value)
+                            loginError = nil
+                        } catch {
+                            loginError = error.localizedDescription
+                            openAtLogin = LoginItem.isEnabled
+                        }
                     }
-                }
                 if let loginError {
-                    Text(loginError)
-                        .font(.caption)
-                        .foregroundStyle(.red)
+                    SettingsNote(text: loginError, color: .red)
                 }
             }
         }
