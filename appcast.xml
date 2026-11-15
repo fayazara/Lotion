@@ -28,6 +28,28 @@
     -->
 
     <item>
+      <title>Version 0.0.12</title>
+      <sparkle:version>12</sparkle:version>
+      <sparkle:shortVersionString>0.0.12</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 15 Nov 2026 17:11:20 +0000</pubDate>
+      <description><![CDATA[
+        <h2>What's New in 0.0.12</h2>
+        <ul>
+          <li>A font you've installed, picked as the interface font, now reaches the sidebar, toolbar, inspector and the rest of the app, not just the search field</li>
+          <li>Today on Home shows the same calendar with the date as the sidebar</li>
+          <li>Fresh icons in Settings</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/fayazara/Lotion/releases/download/v0.0.12/Lotion.dmg"
+        type="application/octet-stream"
+        sparkle:edSignature="2PRg9s9uYNJltYIsnH19Ep5s66i+LgqwIicTmj6wm/xB4pqnxRm/htdrx9LBV+mAsvXUumGGRMqcw318mHcACg=="
+        length="15756406"
+      />
+    </item>
+
+    <item>
       <title>Version 0.0.11</title>
       <sparkle:version>11</sparkle:version>
       <sparkle:shortVersionString>0.0.11</sparkle:shortVersionString>
