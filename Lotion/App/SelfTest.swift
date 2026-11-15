@@ -147,6 +147,11 @@ enum SelfTest {
             log("DONE all passed")
             return
         }
+        if UserDefaults.standard.string(forKey: "LotionSelfTestOnly") == "scratchpad" {
+            await scratchpad(state)
+            log(failures == 0 ? "DONE all passed" : "DONE \(failures) failed")
+            return
+        }
         if UserDefaults.standard.string(forKey: "LotionSelfTestOnly") == "tasks" {
             await tasks(state)
             log(failures == 0 ? "DONE all passed" : "DONE \(failures) failed")
@@ -1982,6 +1987,15 @@ enum SelfTest {
               "saving the scratchpad never renames it", pad.url.path)
         let onDisk = (try? String(contentsOf: pad.url, encoding: .utf8)) ?? ""
         check(onDisk.contains("Farmers market") && onDisk.hasPrefix(BlockMarkdown.entryPrefix), "the scratchpad is saved to disk", onDisk)
+
+        // Deleting the hidden .lotion folder while Lotion is open loses
+        // nothing: the next save puts the scratchpad back.
+        try? FileManager.default.removeItem(at: pad.url.deletingLastPathComponent().deletingLastPathComponent())
+        type(editor, " again")
+        state.library.save(pad)
+        check(state.library.errorMessage == nil, "the scratchpad saves after .lotion is deleted", state.library.errorMessage ?? "")
+        let restored = (try? String(contentsOf: pad.url, encoding: .utf8)) ?? ""
+        check(restored.contains("Farmers market"), "the scratchpad is written back in full", restored)
 
         // Back to a note, so later steps get an editor that isn't in scratchpad mode.
         if let note = state.library.notes.first {

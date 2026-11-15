@@ -530,6 +530,10 @@ final class Library {
         guard note.isDirty || !FileManager.default.fileExists(atPath: note.url.path) else { return }
         let text = note.text
         do {
+            // Its folder may have gone since the library was read: the
+            // scratchpad's `.lotion` folder can be deleted at any time, and
+            // a note's folder can be moved away in Finder.
+            try FileManager.default.createDirectory(at: note.url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try text.write(to: note.url, atomically: true, encoding: .utf8)
             // An atomic write replaces the file; keep its original creation date.
             try? FileManager.default.setAttributes([.creationDate: note.created], ofItemAtPath: note.url.path)

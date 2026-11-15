@@ -208,3 +208,11 @@ Second change"
 Without `-build`, it expects an already exported, notarized `Lotion.app` in
 `~/Downloads`. See [the release skill](.agents/skills/release-lotion/SKILL.md)
 for the full workflow and troubleshooting.
+
+## Credits
+
+- Icons: [Hugeicons](https://hugeicons.com) — the free
+  Stroke Rounded set ([@hugeicons/core-free-icons](https://www.npmjs.com/package/@hugeicons/core-free-icons)), MIT
+  licensed, © Hugeicons.
+- Brand logos: [gilbarbara/logos](https://github.com/gilbarbara/logos) by
+  Gil Barbara, CC0. The logos remain their owners' trademarks.
