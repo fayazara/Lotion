@@ -53,7 +53,7 @@ struct IconPicker: View {
             ScrollView {
                 if count == 0 {
                     Text("No icons named “\(query)”")
-                        .font(.dsCallout)
+                        .uiFont(.dsCallout)
                         .foregroundStyle(Palette.secondaryLabel)
                         .frame(maxWidth: .infinity, minHeight: 120)
                 } else {
@@ -77,7 +77,7 @@ struct IconPicker: View {
             .frame(width: gridWidth, height: Self.cell * 9 + Space.xs * 8)
             if searching, count > 0 {
                 Text(count == 1 ? "1 icon" : "\(count) icons")
-                    .font(.dsCaption)
+                    .uiFont(.dsCaption)
                     .foregroundStyle(Palette.tertiaryLabel)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -91,7 +91,7 @@ struct IconPicker: View {
             content()
         } header: {
             Text(title)
-                .font(.dsSectionHeader)
+                .uiFont(.dsSectionHeader)
                 .foregroundStyle(Palette.secondaryLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, Space.xs)
@@ -120,7 +120,7 @@ struct IconPicker: View {
                 .help("Clear")
             }
         }
-        .font(.dsBody)
+        .uiFont(.dsBody)
         .padding(.horizontal, Space.m)
         .frame(width: gridWidth, height: 28)
         .background(Palette.fill, in: RoundedRectangle(cornerRadius: Radius.field, style: .continuous))
@@ -130,7 +130,7 @@ struct IconPicker: View {
         let isCurrent = icon == current
         return Button { pick(icon) } label: {
             IconGlyph(icon)
-                .font(.system(size: 14))
+                .uiFont(.system(size: 14))
                 .frame(width: Self.cell, height: Self.cell)
                 .foregroundStyle(isCurrent ? Color.white : Palette.label)
                 .background(

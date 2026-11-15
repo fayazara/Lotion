@@ -56,10 +56,10 @@ struct SettingsSection<Content: View>: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 7) {
                 Image(icon: icon)
-                    .font(.system(size: 11, weight: .semibold))
+                    .uiFont(.system(size: 11, weight: .semibold))
                     .frame(width: 14)
                 Text(title.uppercased())
-                    .font(.system(size: 11, weight: .semibold))
+                    .uiFont(.system(size: 11, weight: .semibold))
                     .tracking(0.7)
             }
             .foregroundStyle(Palette.secondaryLabel)
@@ -85,7 +85,7 @@ struct SettingsSection<Content: View>: View {
 
             if let footer {
                 Text(footer)
-                    .font(.system(size: 11.5))
+                    .uiFont(.system(size: 11.5))
                     .foregroundStyle(Palette.secondaryLabel)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 4)
@@ -138,11 +138,11 @@ struct SettingsRow<Accessory: View, Below: View>: View {
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 5) {
                             Text(title)
-                                .font(.system(size: 13, weight: .medium))
+                                .uiFont(.system(size: 13, weight: .medium))
                                 .foregroundStyle(Palette.label)
                             if let info {
                                 Image(icon: "info.circle")
-                                    .font(.system(size: 11))
+                                    .uiFont(.system(size: 11))
                                     .foregroundStyle(Palette.tertiaryLabel)
                                     .help(info)
                                     .accessibilityLabel(info)
@@ -150,7 +150,7 @@ struct SettingsRow<Accessory: View, Below: View>: View {
                         }
                         if let detail {
                             Text(detail)
-                                .font(.system(size: 11.5))
+                                .uiFont(.system(size: 11.5))
                                 .foregroundStyle(Palette.secondaryLabel)
                         }
                     }
@@ -207,7 +207,7 @@ struct SettingsIcon: View {
 
     var body: some View {
         Image(icon: name)
-            .font(.system(size: 14, weight: .regular))
+            .uiFont(.system(size: 14, weight: .regular))
             .foregroundStyle(Palette.label)
             .frame(width: SettingsStyle.chip, height: SettingsStyle.chip)
             .background(Color.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -227,7 +227,7 @@ struct SettingsNote: View {
 
     var body: some View {
         Label(text, icon: icon)
-            .font(.system(size: 11.5))
+            .uiFont(.system(size: 11.5))
             .foregroundStyle(color)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.leading, SettingsStyle.textInset)
@@ -258,7 +258,7 @@ struct ChoiceTile<Picture: View>: View {
                     .frame(width: width, height: (width / aspect).rounded())
                     .selectionRing(isSelected: isSelected, isHovering: isHovering, radius: 8)
                 Text(title)
-                    .font(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
+                    .uiFont(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
                     .foregroundStyle(isSelected ? Palette.label : Palette.secondaryLabel)
                     .lineLimit(1)
             }

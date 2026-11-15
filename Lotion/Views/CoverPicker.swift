@@ -128,7 +128,7 @@ struct CoverPicker: View {
     @ViewBuilder private var unsplash: some View {
         if !browser.hasKey {
             Text("This build has no Unsplash Access Key.")
-                .font(.dsCallout)
+                .uiFont(.dsCallout)
                 .foregroundStyle(Palette.secondaryLabel)
         } else {
             VStack(alignment: .leading, spacing: Space.m) {
@@ -139,7 +139,7 @@ struct CoverPicker: View {
                     if browser.isLoading { ProgressView().controlSize(.small) }
                 }
                 if let error = browser.errorMessage {
-                    Text(error).font(.dsCaption).foregroundStyle(.red)
+                    Text(error).uiFont(.dsCaption).foregroundStyle(.red)
                 }
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: Space.m) {
@@ -161,7 +161,7 @@ struct CoverPicker: View {
                                     choose(photo)
                                 }
                                 Link(photo.user.name, destination: photo.photographerURL)
-                                    .font(.system(size: 10))
+                                    .uiFont(.system(size: 10))
                                     .foregroundStyle(Palette.secondaryLabel)
                                     .lineLimit(1)
                             }
@@ -174,7 +174,7 @@ struct CoverPicker: View {
                     }
                 }
                 Link("Photos from Unsplash", destination: UnsplashClient.unsplashURL)
-                    .font(.dsCaption)
+                    .uiFont(.dsCaption)
                     .foregroundStyle(Palette.secondaryLabel)
             }
             .onAppear { browser.loadIfNeeded() }
@@ -197,7 +197,7 @@ struct CoverPicker: View {
             Button("Choose an Image…") { chooseFile() }
                 .controlSize(.large)
             Text("Images up to any size; a copy is kept with your notes.")
-                .font(.dsCaption)
+                .uiFont(.dsCaption)
                 .foregroundStyle(Palette.secondaryLabel)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

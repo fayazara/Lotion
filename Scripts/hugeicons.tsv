@@ -2,10 +2,12 @@ airplane	Airplane01
 archivebox	Archive02
 arrow.branch	GitBranch
 arrow.clockwise	Refresh
+arrow.down.circle	Download03
 arrow.right.circle	CircleArrowRight01
 arrow.triangle.2.circlepath	Exchange01
 arrow.triangle.merge	GitMerge
 arrow.triangle.pull	GitPullRequest
+arrow.up.and.down.text.horizontal	ParagraphSpacing
 arrow.up.left.and.arrow.down.right	ArrowExpand01
 arrow.up.right	ArrowUpRight01
 arrow.up.right.square	LinkSquare02
@@ -20,6 +22,7 @@ books.vertical	Books01
 brain.head.profile	Brain02
 briefcase	Briefcase01
 bubble.left.and.bubble.right	BubbleChat
+bubble.left.and.text.bubble.right	ChatBot
 building.2	Building03
 calendar	Calendar03
 calendar.badge.minus	CalendarRemove01
@@ -27,6 +30,7 @@ calendar.today	Calendar04
 camera	Camera01
 car	Car01
 cart	ShoppingCart01
+character.cursor.ibeam	CursorText
 chart.bar	ChartHistogram
 chart.pie	PieChart
 checklist	CheckList
@@ -34,6 +38,7 @@ checklist.checked	TaskDone01
 checkmark	Tick02
 checkmark.circle	CheckmarkCircle02
 checkmark.circle.fill	CheckmarkCircle02
+checkmark.square	CheckmarkSquare02
 chevron.down	ArrowDown01
 chevron.left	ArrowLeft01
 chevron.left.forwardslash.chevron.right	SourceCode
@@ -150,8 +155,10 @@ star	Star
 star.fill	Star	fill
 sun.max	Sun03
 sun.max.fill	Sun03	fill
+sun.min	Sun01
 sunrise	Sunrise
 tablecells	Table01
+tablecells.badge.ellipsis	TableProperties
 tag	Tag01
 terminal	ComputerTerminal01
 text.bubble	Message01

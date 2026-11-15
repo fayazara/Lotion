@@ -54,7 +54,7 @@ struct TasksPane: View {
                 .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
                 .textSelection(.enabled)
             Text(meaning)
-                .font(.system(size: 12))
+                .uiFont(.system(size: 12))
                 .foregroundStyle(Palette.secondaryLabel)
                 .fixedSize(horizontal: false, vertical: true)
         }

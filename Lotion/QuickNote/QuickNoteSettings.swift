@@ -98,7 +98,7 @@ struct ShortcutRecorder: View {
                     slot.shortcut = shortcut
                 }
                 .buttonStyle(.link)
-                .font(.caption)
+                .uiFont(.system(size: 10))
             }
         }
         .onDisappear { stop() }

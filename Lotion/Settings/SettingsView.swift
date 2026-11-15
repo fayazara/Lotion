@@ -32,14 +32,14 @@ enum SettingsPane: String, CaseIterable, Identifiable {
 
     var symbol: String {
         switch self {
-        case .appearance: "paintbrush"
-        case .editor: "textformat"
-        case .tasks: "checklist"
+        case .appearance: "sun.min"
+        case .editor: "character.cursor.ibeam"
+        case .tasks: "checkmark.square"
         case .quickNote: "note.text"
         case .media: "photo"
         case .cloud: "cloud.fill"
-        case .agents: "sparkles"
-        case .updates: "arrow.triangle.2.circlepath"
+        case .agents: "bubble.left.and.text.bubble.right"
+        case .updates: "arrow.down.circle"
         }
     }
 }
@@ -257,10 +257,10 @@ private struct ThemeGrid: View {
                 HStack(spacing: 4) {
                     Text(showsAll ? "Show fewer" : "Show all \(LotionTheme.allCases.count) themes")
                     Image(icon: "chevron.down")
-                        .font(.system(size: 9, weight: .semibold))
+                        .uiFont(.system(size: 9, weight: .semibold))
                         .rotationEffect(.degrees(showsAll ? 180 : 0))
                 }
-                .font(.system(size: 12, weight: .medium))
+                .uiFont(.system(size: 12, weight: .medium))
                 .foregroundStyle(Palette.secondaryLabel)
                 .contentShape(Rectangle())
             }
@@ -289,7 +289,7 @@ private struct ThemeSwatch: View {
                     Color(nsColor: palette.background)
                     VStack(alignment: .leading, spacing: 5) {
                         Text("Aa")
-                            .font(.system(size: 15, weight: .semibold))
+                            .uiFont(.system(size: 15, weight: .semibold))
                             .foregroundStyle(heading)
                         HStack(spacing: 3) {
                             Capsule().fill(text.opacity(0.45)).frame(width: 20, height: 3)
@@ -300,7 +300,7 @@ private struct ThemeSwatch: View {
                     .padding(.top, 6)
                     if theme.hasLight != theme.hasDark {
                         Image(icon: theme.hasDark ? "moon.fill" : "sun.max.fill")
-                            .font(.system(size: 8, weight: .semibold))
+                            .uiFont(.system(size: 8, weight: .semibold))
                             .foregroundStyle(Color(nsColor: palette.secondary))
                             .frame(maxWidth: .infinity, alignment: .topTrailing)
                             .padding(6)
@@ -309,7 +309,7 @@ private struct ThemeSwatch: View {
                 .frame(height: 48)
                 .selectionRing(isSelected: isSelected, isHovering: isHovering, radius: 8)
                 Text(theme.name)
-                    .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                    .uiFont(.system(size: 11, weight: isSelected ? .semibold : .regular))
                     .foregroundStyle(isSelected ? Palette.label : Palette.secondaryLabel)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -425,7 +425,7 @@ private struct EditorPane: View {
                             .accessibilityLabel("Size")
                             .accessibilityValue("\(Int(noteFontSize)) points")
                         Text("\(Int(noteFontSize)) pt")
-                            .font(.system(size: 12))
+                            .uiFont(.system(size: 12))
                             .monospacedDigit()
                             .foregroundStyle(Palette.secondaryLabel)
                             .frame(width: 34, alignment: .trailing)
@@ -437,7 +437,7 @@ private struct EditorPane: View {
             }
 
             SettingsSection("Layout", icon: "square.grid.2x2") {
-                SettingsRow("Line spacing", icon: "list.bullet", detail: "Room between the lines of a paragraph.") {
+                SettingsRow("Line spacing", icon: "arrow.up.and.down.text.horizontal", detail: "Room between the lines of a paragraph.") {
                     EmptyView()
                 } below: {
                     ChoiceTiles {
@@ -465,7 +465,7 @@ private struct EditorPane: View {
                         }
                     }
                 }
-                SettingsRow("Tables", icon: "tablecells", detail: "As wide as what's in them, or across the whole column.") {
+                SettingsRow("Tables", icon: "tablecells.badge.ellipsis", detail: "As wide as what's in them, or across the whole column.") {
                     EmptyView()
                 } below: {
                     ChoiceTiles {
@@ -641,7 +641,7 @@ private struct MediaPane: View {
                             detail: "Saved beside the note the first time they show.",
                             info: "An image linked from the web is saved in the note’s folder the first time it shows, and opens from there after.") {
                     Text("Always on")
-                        .font(.system(size: 12))
+                        .uiFont(.system(size: 12))
                         .foregroundStyle(Palette.secondaryLabel)
                 }
                 SettingsToggle("Save videos for offline viewing", icon: "play.rectangle",

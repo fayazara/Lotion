@@ -22,7 +22,7 @@ private struct TaskPage<Content: View>: View {
             VStack(alignment: .leading, spacing: 34) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(title)
-                        .font(.system(size: 28, weight: .bold))
+                        .uiFont(.system(size: 28, weight: .bold))
                         .foregroundStyle(colors.heading)
                         .accessibilityAddTraits(.isHeader)
                     HStack(spacing: 6) {
@@ -33,7 +33,7 @@ private struct TaskPage<Content: View>: View {
                             Text(detail)
                         }
                     }
-                    .font(.system(size: 13.5))
+                    .uiFont(.system(size: 13.5))
                     .foregroundStyle(colors.secondary)
                 }
                 content()
@@ -159,7 +159,7 @@ struct InboxView: View {
                 if let inbox {
                     Button("Open Inbox Note") { state.selection = inbox.id }
                         .buttonStyle(.plain)
-                        .font(.system(size: 13, weight: .medium))
+                        .uiFont(.system(size: 13, weight: .medium))
                         .foregroundStyle(colors.accent)
                         .help("The inbox is a note called “Inbox”. Its to-dos, and undated ones in the scratchpad, show here.")
                 }

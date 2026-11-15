@@ -92,7 +92,7 @@ struct CloudPane: View {
                             .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                 }
-                .font(.system(size: 12))
+                .uiFont(.system(size: 12))
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(SettingsStyle.rowPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -102,7 +102,7 @@ struct CloudPane: View {
                 SettingsSection("Published notes", icon: "square.and.arrow.up") {
                     if notes.isEmpty {
                         Text("Nothing published yet. Use the Share button in a note’s toolbar.")
-                            .font(.system(size: 12))
+                            .uiFont(.system(size: 12))
                             .foregroundStyle(Palette.secondaryLabel)
                             .padding(SettingsStyle.rowPadding)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -136,10 +136,10 @@ struct CloudPane: View {
         case .idle:
             VStack(alignment: .leading, spacing: 2) {
                 Text("Connection")
-                    .font(.system(size: 13, weight: .medium))
+                    .uiFont(.system(size: 13, weight: .medium))
                     .foregroundStyle(Palette.label)
                 Text("Check the URL and token work.")
-                    .font(.system(size: 11.5))
+                    .uiFont(.system(size: 11.5))
                     .foregroundStyle(Palette.secondaryLabel)
             }
         case .checking:
@@ -150,25 +150,25 @@ struct CloudPane: View {
         case .connected(let info, let latest):
             VStack(alignment: .leading, spacing: 2) {
                 Text("Connected")
-                    .font(.system(size: 13, weight: .medium))
+                    .uiFont(.system(size: 13, weight: .medium))
                     .foregroundStyle(.green)
                 if let latest, info.version.isOlderVersion(than: latest) {
                     Text("Lotion Share \(info.version) · Version \(latest) is out. Run the setup prompt again to update.")
-                        .font(.system(size: 11.5))
+                        .uiFont(.system(size: 11.5))
                         .foregroundStyle(.orange)
                 } else {
                     Text("Lotion Share \(info.version) · \(info.notes == 1 ? "1 published note" : "\(info.notes) published notes")")
-                        .font(.system(size: 11.5))
+                        .uiFont(.system(size: 11.5))
                         .foregroundStyle(Palette.secondaryLabel)
                 }
             }
         case .failed(let message):
             VStack(alignment: .leading, spacing: 2) {
                 Text("Not connected")
-                    .font(.system(size: 13, weight: .medium))
+                    .uiFont(.system(size: 13, weight: .medium))
                     .foregroundStyle(.orange)
                 Text(message)
-                    .font(.system(size: 11.5))
+                    .uiFont(.system(size: 11.5))
                     .foregroundStyle(Palette.secondaryLabel)
                     .fixedSize(horizontal: false, vertical: true)
             }

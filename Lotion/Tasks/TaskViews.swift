@@ -77,7 +77,7 @@ struct TaskCheckbox: View {
                     .strokeBorder(tint, lineWidth: priority == nil ? 1.2 : 1.6)
                 if checked || isHovered {
                     Image(icon: "checkmark")
-                        .font(.system(size: size * 0.5, weight: .bold))
+                        .uiFont(.system(size: size * 0.5, weight: .bold))
                         .foregroundStyle(checked ? Color(nsColor: colors.palette.background) : tint)
                 }
             }
@@ -111,7 +111,7 @@ struct TaskRow: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline, spacing: Space.m) {
                     Text(task.title.isEmpty ? "Untitled task" : task.title)
-                        .font(.system(size: 14))
+                        .uiFont(.system(size: 14))
                         .foregroundStyle(colors.ink.opacity(task.checked || isLeaving ? 0.45 : task.title.isEmpty ? 0.5 : 1))
                         .strikethrough(task.checked || isLeaving, color: colors.secondary.opacity(0.6))
                         .lineSpacing(2)
@@ -135,7 +135,7 @@ struct TaskRow: View {
         .contextMenu { TaskMenuItems(task: task, state: state) }
         .draggable(TaskDrag.payload(task)) {
             Text(task.title)
-                .font(.system(size: 13))
+                .uiFont(.system(size: 13))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(.regularMaterial, in: Capsule())
@@ -193,7 +193,7 @@ struct TaskRow: View {
                     .help("Open the note")
                 }
             }
-            .font(.system(size: 12.5))
+            .uiFont(.system(size: 12.5))
             .foregroundStyle(colors.secondary)
             .labelStyle(CompactLabelStyle())
             .lineLimit(1)
@@ -235,12 +235,12 @@ struct TaskCompactRow: View {
                 withAnimation(.easeInOut(duration: 0.25)) { _ = state.library.tasks.setChecked(task, !task.checked) }
             }
             Text(task.title.isEmpty ? "Untitled task" : task.title)
-                .font(.system(size: 13.5))
+                .uiFont(.system(size: 13.5))
                 .foregroundStyle(colors.ink.opacity(task.title.isEmpty ? 0.5 : 1))
                 .lineLimit(1)
             Spacer(minLength: Space.l)
             trailing
-                .font(.system(size: 13).monospacedDigit())
+                .uiFont(.system(size: 13).monospacedDigit())
         }
         .padding(.horizontal, 10)
         .frame(height: 38)
@@ -371,7 +371,7 @@ private struct TaskMenuButton: View {
             TaskMenuItems(task: task, state: state)
         } label: {
             Image(icon: "ellipsis")
-                .font(.system(size: 12, weight: .semibold))
+                .uiFont(.system(size: 12, weight: .semibold))
                 .foregroundStyle(colors.secondary)
                 .frame(width: 22, height: 20)
                 .contentShape(Rectangle())
@@ -415,16 +415,16 @@ struct TaskSection<Accessory: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: Space.m) {
                 Text(title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .uiFont(.system(size: 14, weight: .semibold))
                     .foregroundStyle(titleColor ?? colors.heading)
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 13))
+                        .uiFont(.system(size: 13))
                         .foregroundStyle(colors.secondary)
                 }
                 if !tasks.isEmpty {
                     Text(tasks.count, format: .number)
-                        .font(.system(size: 13))
+                        .uiFont(.system(size: 13))
                         .monospacedDigit()
                         .foregroundStyle(colors.secondary.opacity(0.7))
                 }
@@ -437,7 +437,7 @@ struct TaskSection<Accessory: View>: View {
                     withAnimation(.easeOut(duration: 0.18)) { isCollapsed = !collapsed }
                 } label: {
                     Image(icon: "chevron.down")
-                        .font(.system(size: 11, weight: .semibold))
+                        .uiFont(.system(size: 11, weight: .semibold))
                         .foregroundStyle(colors.secondary)
                         .rotationEffect(.degrees(collapsed ? -90 : 0))
                         .frame(width: 22, height: 20)
@@ -457,7 +457,7 @@ struct TaskSection<Accessory: View>: View {
             if !collapsed {
                 if tasks.isEmpty, let empty {
                     Text(empty)
-                        .font(.system(size: 13))
+                        .uiFont(.system(size: 13))
                         .foregroundStyle(colors.secondary.opacity(0.8))
                         .padding(.vertical, 12)
                 }
@@ -503,7 +503,7 @@ struct RescheduleMenu: View {
             }
         } label: {
             Text("Reschedule")
-                .font(.system(size: 13, weight: .medium))
+                .uiFont(.system(size: 13, weight: .medium))
                 .foregroundStyle(Color(nsColor: .systemRed))
         }
         .menuStyle(.button)
@@ -566,11 +566,11 @@ struct TaskQuickAddField: View {
         } label: {
             HStack(spacing: 12) {
                 Image(icon: "plus")
-                    .font(.system(size: 13, weight: .semibold))
+                    .uiFont(.system(size: 13, weight: .semibold))
                     .foregroundStyle(colors.accent)
                     .frame(width: 18)
                 Text(added.map { "Added to \($0)" } ?? "Add task")
-                    .font(.system(size: 14))
+                    .uiFont(.system(size: 14))
                     .foregroundStyle(isHovered ? colors.accent : colors.secondary)
                 Spacer()
             }
@@ -587,7 +587,7 @@ struct TaskQuickAddField: View {
             VStack(alignment: .leading, spacing: 10) {
                 TextField(placeholder, text: $text)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 14, weight: .medium))
+                    .uiFont(.system(size: 14, weight: .medium))
                     .foregroundStyle(colors.ink)
                     .focused($isFocused)
                     .onSubmit(add)
@@ -597,7 +597,7 @@ struct TaskQuickAddField: View {
                     TaskDraftChips(draft: draft, colors: colors)
                 } else {
                     Text("Type a date, a time, “every week”, #tags or p1–p3")
-                        .font(.system(size: 12))
+                        .uiFont(.system(size: 12))
                         .foregroundStyle(colors.secondary.opacity(0.75))
                         .frame(height: 22)
                 }
@@ -676,7 +676,7 @@ struct TaskDraftChips: View {
             Image(icon: symbol).imageScale(.small)
             Text(title)
         }
-        .font(.system(size: 12, weight: .medium))
+        .uiFont(.system(size: 12, weight: .medium))
         .foregroundStyle(color)
         .padding(.horizontal, 8)
         .frame(height: 22)
@@ -708,10 +708,10 @@ struct TaskTargetMenu: View {
                 Image(icon: current == nil ? "tray" : "doc.text").imageScale(.small)
                 Text(current?.displayTitle ?? TaskIndex.inboxTitle)
                 Image(icon: "chevron.down")
-                    .font(.system(size: 8, weight: .bold))
+                    .uiFont(.system(size: 8, weight: .bold))
                     .opacity(0.7)
             }
-            .font(.system(size: 12, weight: .medium))
+            .uiFont(.system(size: 12, weight: .medium))
             .foregroundStyle(isHovered ? colors.ink : colors.secondary)
             .padding(.horizontal, 10)
             .frame(height: 28)
@@ -748,7 +748,7 @@ struct CapsuleButtonStyle: ButtonStyle {
             let ink = Color(nsColor: palette.text)
             let tint = Color(nsColor: palette.glyph ?? palette.accent)
             configuration.label
-                .font(.system(size: 12, weight: .medium))
+                .uiFont(.system(size: 12, weight: .medium))
                 .foregroundStyle(isProminent ? Color.white : ink)
                 .padding(.horizontal, Space.l)
                 .frame(height: 28)

@@ -17,7 +17,7 @@ struct InspectorView: View {
             NoteInspector(note: note, state: state)
         } else {
             Text("No Note Selected")
-                .font(.dsCallout)
+                .uiFont(.dsCallout)
                 .foregroundStyle(Palette.secondaryLabel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -106,11 +106,11 @@ private struct NoteInspector: View {
                         Button { state.showInFinder(note) } label: {
                             HStack(spacing: Space.m) {
                                 IconGlyph(note.folder.map { state.library.icon(for: $0) } ?? "tray")
-                                    .font(.system(size: 14))
+                                    .uiFont(.system(size: 14))
                                     .foregroundStyle(Palette.secondaryLabel)
                                     .frame(width: 20)
                                 Text(note.folder ?? "Notes")
-                                    .font(.dsBody)
+                                    .uiFont(.dsBody)
                                     .foregroundStyle(Palette.label)
                                     .lineLimit(1)
                                 Spacer(minLength: 0)
@@ -165,12 +165,12 @@ private struct InspectorSection<Content: View>: View {
             } label: {
                 HStack {
                     Text(title.uppercased())
-                        .font(.system(size: 11, weight: .semibold))
+                        .uiFont(.system(size: 11, weight: .semibold))
                         .tracking(0.6)
                         .foregroundStyle(Palette.tertiaryLabel)
                     Spacer()
                     Image(icon: "chevron.down")
-                        .font(.system(size: 10, weight: .semibold))
+                        .uiFont(.system(size: 10, weight: .semibold))
                         .foregroundStyle(isHovering ? Palette.secondaryLabel : Palette.tertiaryLabel)
                         .rotationEffect(.degrees(isCollapsed ? -90 : 0))
                 }
@@ -208,11 +208,11 @@ private struct PropertyRow: View {
     var body: some View {
         HStack(spacing: Space.m) {
             Image(icon: symbol)
-                .font(.system(size: 13))
+                .uiFont(.system(size: 13))
                 .foregroundStyle(Palette.secondaryLabel)
                 .frame(width: 20)
             (Text("\(label):  ").foregroundStyle(Palette.secondaryLabel) + Text(value).foregroundStyle(Palette.label))
-                .font(.dsBody)
+                .uiFont(.dsBody)
                 .lineLimit(1)
                 .truncationMode(.middle)
         }
@@ -238,7 +238,7 @@ private struct OutlineRow: View {
                     .frame(width: depth == 0 ? 8 : 6, height: depth == 0 ? 8 : 6)
                     .frame(width: 20)
                 Text(heading.title.isEmpty ? "Untitled" : heading.title)
-                    .font(depth == 0 ? .system(size: 13, weight: .medium) : .dsBody)
+                    .uiFont(depth == 0 ? .system(size: 13, weight: .medium) : .dsBody)
                     .foregroundStyle(depth == 0 ? Palette.label : Palette.secondaryLabel)
                     .lineLimit(1)
                 Spacer(minLength: 0)
@@ -270,10 +270,10 @@ private struct ActionLabel: View {
     var body: some View {
         HStack(spacing: Space.m) {
             Image(icon: symbol)
-                .font(.system(size: 13))
+                .uiFont(.system(size: 13))
                 .frame(width: 20)
             Text(title)
-                .font(.dsBody)
+                .uiFont(.dsBody)
             Spacer(minLength: 0)
         }
     }
@@ -347,7 +347,7 @@ private struct StatRow: View {
                 .monospacedDigit()
                 .contentTransition(.numericText())
         }
-        .font(.dsBody)
+        .uiFont(.dsBody)
         .padding(.horizontal, Space.xs)
         .frame(minHeight: 32)
         .overlay(alignment: .bottom) {

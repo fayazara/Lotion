@@ -70,7 +70,7 @@ struct EntryBrowser: View {
         VStack(spacing: 0) {
             TextField("Search Entries", text: $query)
                 .textFieldStyle(.plain)
-                .font(.system(size: 13))
+                .uiFont(.system(size: 13))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
                 .focused($isSearchFocused)
@@ -86,7 +86,7 @@ struct EntryBrowser: View {
                         }
                         if results.isEmpty {
                             Text(query.isEmpty ? "No entries yet" : "No matches")
-                                .font(.callout)
+                                .uiFont(.system(size: 12))
                                 .foregroundStyle(.secondary)
                                 .padding(.vertical, 24)
                         }
@@ -114,18 +114,18 @@ struct EntryBrowser: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text(entry.displayTitle)
-                        .font(.system(size: 13, weight: .medium))
+                        .uiFont(.system(size: 13, weight: .medium))
                         .foregroundStyle(entry.isEmpty ? .secondary : .primary)
                         .lineLimit(1)
                     Spacer(minLength: 8)
                     if entry.id == model.currentID {
                         Image(icon: "pencil")
-                            .font(.system(size: 10, weight: .semibold))
+                            .uiFont(.system(size: 10, weight: .semibold))
                             .foregroundStyle(.secondary)
                     }
                 }
                 Text(subtitle(entry))
-                    .font(.system(size: 11))
+                    .uiFont(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }

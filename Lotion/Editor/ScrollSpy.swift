@@ -263,7 +263,7 @@ private struct SpyRow: View {
         Button(action: action) {
             Text(entry.title)
                 // Weight stays put: changing it reflows the text as it lights up.
-                .font(.system(size: depth == 0 ? 13 : 12.5, weight: depth == 0 ? .medium : .regular))
+                .uiFont(.system(size: depth == 0 ? 13 : 12.5, weight: depth == 0 ? .medium : .regular))
                 .foregroundStyle(ink.opacity(isActive ? 0.95 : depth == 0 ? 0.55 : 0.42))
                 .lineLimit(1)
                 .truncationMode(.tail)

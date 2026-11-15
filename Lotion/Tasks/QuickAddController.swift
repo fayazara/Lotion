@@ -151,7 +151,7 @@ struct QuickAddView: View {
             VStack(alignment: .leading, spacing: 14) {
                 TextField("Call mum tomorrow 6pm #home p1", text: $model.text)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 18, weight: .medium))
+                    .uiFont(.system(size: 18, weight: .medium))
                     .foregroundStyle(colors.ink)
                     .focused($isFocused)
                     .onSubmit { controller.add(keepOpen: NSEvent.modifierFlags.contains(.command)) }
@@ -218,7 +218,7 @@ struct QuickAddView: View {
             if let added = model.lastAdded, model.text.isEmpty {
                 Label("Added to \(added)", icon: "checkmark")
                     .labelStyle(CompactLabelStyle())
-                    .font(.system(size: 12))
+                    .uiFont(.system(size: 12))
                     .foregroundStyle(colors.secondary)
                     .padding(.trailing, 16)
                     .transition(.opacity)
@@ -302,9 +302,9 @@ private struct QuickAddPillLabel: View {
     var body: some View {
         HStack(spacing: 5) {
             Image(icon: symbol)
-                .font(.system(size: 11, weight: .medium))
+                .uiFont(.system(size: 11, weight: .medium))
             Text(title)
-                .font(.system(size: 12.5, weight: .medium))
+                .uiFont(.system(size: 12.5, weight: .medium))
         }
     }
 }
@@ -330,12 +330,12 @@ private struct KeyHint: View {
     var body: some View {
         HStack(spacing: 6) {
             Text(title)
-                .font(.system(size: 12))
+                .uiFont(.system(size: 12))
                 .foregroundStyle(colors.secondary)
             HStack(spacing: 3) {
                 ForEach(keys, id: \.self) { key in
                     Text(key)
-                        .font(.system(size: 11, weight: .medium))
+                        .uiFont(.system(size: 11, weight: .medium))
                         .foregroundStyle(colors.secondary)
                         .frame(minWidth: 20, minHeight: 20)
                         .background(
@@ -372,12 +372,12 @@ private struct QuickAddTargetMenu: View {
         } label: {
             HStack(spacing: 6) {
                 Image(icon: current == nil ? "tray" : "doc.text")
-                    .font(.system(size: 11, weight: .medium))
+                    .uiFont(.system(size: 11, weight: .medium))
                 Text(current?.displayTitle ?? TaskIndex.inboxTitle)
-                    .font(.system(size: 12.5, weight: .medium))
+                    .uiFont(.system(size: 12.5, weight: .medium))
                     .lineLimit(1)
                 Image(icon: "chevron.down")
-                    .font(.system(size: 8, weight: .bold))
+                    .uiFont(.system(size: 8, weight: .bold))
                     .opacity(0.6)
             }
             .foregroundStyle(isHovered ? colors.ink : colors.secondary)

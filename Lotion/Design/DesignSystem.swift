@@ -58,28 +58,72 @@ enum Space {
 
 // MARK: - Typography
 
-extension Font {
-    static let dsTitle = Font.system(size: 15, weight: .semibold)
-    static let dsHeadline = Font.system(size: 13, weight: .semibold)
-    static let dsBody = Font.system(size: 13)
-    static let dsCallout = Font.system(size: 12)
-    static let dsCaption = Font.system(size: 11)
-    static let dsSectionHeader = Font.system(size: 11, weight: .semibold)
-    static let dsNumeric = Font.system(size: 15, weight: .semibold).monospacedDigit()
+/// A size and weight for the app's chrome, set in the interface font.
+/// Use with `.uiFont(_:)`; a plain `Font` can't follow an installed family.
+struct InterfaceType {
+    var size: CGFloat
+    var weight: Font.Weight = .regular
+    var digits = false
+
+    static func system(size: CGFloat, weight: Font.Weight = .regular) -> InterfaceType {
+        InterfaceType(size: size, weight: weight)
+    }
+
+    func weight(_ weight: Font.Weight) -> InterfaceType {
+        var copy = self; copy.weight = weight; return copy
+    }
+
+    func monospacedDigit() -> InterfaceType {
+        var copy = self; copy.digits = true; return copy
+    }
+
+    static let dsTitle = InterfaceType(size: 15, weight: .semibold)
+    static let dsHeadline = InterfaceType(size: 13, weight: .semibold)
+    static let dsBody = InterfaceType(size: 13)
+    static let dsCallout = InterfaceType(size: 12)
+    static let dsCaption = InterfaceType(size: 11)
+    static let dsSectionHeader = InterfaceType(size: 11, weight: .semibold)
+    static let dsNumeric = InterfaceType(size: 15, weight: .semibold, digits: true)
 }
 
 // MARK: - Interface font
 
+extension EnvironmentValues {
+    /// The installed family picked as the interface font; nil for a system design.
+    @Entry var interfaceFamily: String?
+}
+
 extension View {
     /// Applies the interface font setting to chrome. A system design reaches
-    /// every system font below, sized or not; an installed family can only
-    /// replace the default font.
+    /// every system font below through `fontDesign`; an installed family
+    /// reaches the default font and every `.uiFont` below.
     @ViewBuilder func interfaceFont(_ choice: String) -> some View {
         if let design = FontChoice.design(choice) {
             fontDesign(design)
         } else {
             font(.custom(choice, size: 13))
+                .environment(\.interfaceFamily, choice)
         }
+    }
+
+    /// Chrome text at a size and weight, in the interface font.
+    func uiFont(_ type: InterfaceType) -> some View {
+        modifier(InterfaceFontModifier(type: type))
+    }
+}
+
+private struct InterfaceFontModifier: ViewModifier {
+    let type: InterfaceType
+    @Environment(\.interfaceFamily) private var family
+
+    func body(content: Content) -> some View {
+        var font: Font = if let family {
+            .custom(family, fixedSize: type.size).weight(type.weight)
+        } else {
+            .system(size: type.size, weight: type.weight)
+        }
+        if type.digits { font = font.monospacedDigit() }
+        return content.font(font)
     }
 }
 
@@ -112,18 +156,18 @@ struct EmptyStateView<Actions: View>: View {
     var body: some View {
         VStack(spacing: Space.l) {
             Image(icon: systemImage)
-                .font(.system(size: 22, weight: .medium))
+                .uiFont(.system(size: 22, weight: .medium))
                 .foregroundStyle(Palette.secondaryLabel)
                 .frame(width: 56, height: 56)
                 .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .padding(.bottom, Space.xs)
 
             Text(title)
-                .font(.dsTitle)
+                .uiFont(.dsTitle)
                 .foregroundStyle(Palette.label)
 
             Text(message)
-                .font(.dsCallout)
+                .uiFont(.dsCallout)
                 .foregroundStyle(Palette.secondaryLabel)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 280)

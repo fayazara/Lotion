@@ -85,12 +85,12 @@ struct HomeView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.l) {
             Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
-                .font(.system(size: 12, weight: .semibold))
+                .uiFont(.system(size: 12, weight: .semibold))
                 .textCase(.uppercase)
                 .kerning(0.6)
                 .foregroundStyle(secondary.opacity(0.8))
             Text(Self.greeting(for: .now))
-                .font(.system(size: 34, weight: .semibold))
+                .uiFont(.system(size: 34, weight: .semibold))
                 .foregroundStyle(heading)
                 .accessibilityAddTraits(.isHeader)
             HStack(spacing: Space.m) {
@@ -122,10 +122,10 @@ struct HomeView: View {
     private var emptyLibrary: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             Text("Nothing here yet")
-                .font(.system(size: 15, weight: .semibold))
+                .uiFont(.system(size: 15, weight: .semibold))
                 .foregroundStyle(ink)
             Text("Notes are Markdown files, kept in a folder you can open in Finder. Start one, and it shows up here.")
-                .font(.system(size: 13))
+                .uiFont(.system(size: 13))
                 .foregroundStyle(secondary)
         }
     }
@@ -138,11 +138,16 @@ struct HomeView: View {
 
     private func sectionBody<Content: View>(_ title: String, systemImage: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: Space.xl) {
-            Label(title, icon: systemImage)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(secondary)
-                .labelStyle(SectionLabelStyle())
-                .accessibilityAddTraits(.isHeader)
+            Label {
+                Text(title)
+            } icon: {
+                // Today shows the date, as it does in the sidebar.
+                if systemImage == TodayGlyph.symbol { TodayGlyph() } else { Image(icon: systemImage) }
+            }
+            .uiFont(.system(size: 12, weight: .semibold))
+            .foregroundStyle(secondary)
+            .labelStyle(SectionLabelStyle())
+            .accessibilityAddTraits(.isHeader)
             content()
         }
     }
@@ -176,7 +181,7 @@ private struct HomeTodayTasks: View {
         let open = today.overdue + today.today
         if !open.isEmpty {
             let colors = TaskColors(palette: palette)
-            section("Today", "sun.max") {
+            section("Today", TodayGlyph.symbol) {
                 AnyView(VStack(alignment: .leading, spacing: 0) {
                     let shown = Array(open.prefix(5))
                     ForEach(shown) { task in
@@ -185,7 +190,7 @@ private struct HomeTodayTasks: View {
                     if open.count > 5 {
                         Button { state.show(.today) } label: {
                             Text("\(open.count - 5) more in Today")
-                                .font(.system(size: 13))
+                                .uiFont(.system(size: 13))
                                 .foregroundStyle(colors.secondary)
                                 .padding(.leading, TaskCompactRow.textInset)
                                 .frame(height: 36)
@@ -300,7 +305,7 @@ private struct QuickAction: View {
                 Text(shortcut)
                     .foregroundStyle(isProminent ? Color.white.opacity(0.7) : Color(nsColor: palette.secondary).opacity(0.7))
             }
-            .font(.system(size: 12, weight: .medium))
+            .uiFont(.system(size: 12, weight: .medium))
             .foregroundStyle(isProminent ? Color.white : Color(nsColor: palette.text))
             .padding(.horizontal, Space.l)
             .padding(.vertical, 7)
@@ -336,7 +341,7 @@ private struct NoteCard: View {
                     CoverBand(cover: cover, library: library, palette: palette, seed: note.displayTitle,
                               size: CGSize(width: Self.width, height: Self.band))
                     IconGlyph(icon ?? NoteIcon.default)
-                        .font(.system(size: 13, weight: .medium))
+                        .uiFont(.system(size: 13, weight: .medium))
                         .foregroundStyle(Color(nsColor: palette.glyph ?? palette.secondary))
                         .frame(width: 30, height: 30)
                         .background(Circle().fill(Color(nsColor: palette.background)))
@@ -346,14 +351,14 @@ private struct NoteCard: View {
                 .zIndex(1)
                 VStack(alignment: .leading, spacing: 6) {
                     Text(note.displayTitle)
-                        .font(.system(size: 13, weight: .semibold))
+                        .uiFont(.system(size: 13, weight: .semibold))
                         .foregroundStyle(Color(nsColor: palette.text).opacity(note.title.isEmpty ? 0.5 : 1))
                         .lineSpacing(2)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                     if let preview = Self.preview(of: note.text) {
                         Text(preview)
-                            .font(.system(size: 12))
+                            .uiFont(.system(size: 12))
                             .foregroundStyle(Color(nsColor: palette.secondary))
                             .lineSpacing(3.5)
                             .lineLimit(2)
@@ -367,7 +372,7 @@ private struct NoteCard: View {
                             Text(folder).lineLimit(1)
                         }
                     }
-                    .font(.system(size: 11))
+                    .uiFont(.system(size: 11))
                     .foregroundStyle(Color(nsColor: palette.secondary).opacity(0.75))
                 }
                 .padding(.horizontal, 16)
@@ -476,17 +481,17 @@ private struct ScratchpadCard: View {
                 VStack(alignment: .leading, spacing: 10) {
                     if let latest {
                         Text(latest.label)
-                            .font(.system(size: 11, weight: .medium))
+                            .uiFont(.system(size: 11, weight: .medium))
                             .foregroundStyle(Color(nsColor: palette.secondary).opacity(0.8))
                         Text(latest.text.isEmpty ? "An empty page, waiting." : latest.text)
-                            .font(.system(size: 13))
+                            .uiFont(.system(size: 13))
                             .foregroundStyle(Color(nsColor: palette.text).opacity(latest.text.isEmpty ? 0.5 : 0.9))
                             .lineSpacing(5)
                             .lineLimit(3)
                             .multilineTextAlignment(.leading)
                     }
                     Text(note.entryCount == 1 ? "1 entry" : "\(note.entryCount) entries")
-                        .font(.system(size: 11))
+                        .uiFont(.system(size: 11))
                         .foregroundStyle(Color(nsColor: palette.secondary).opacity(0.75))
                         .padding(.top, Space.xs)
                 }
@@ -501,9 +506,9 @@ private struct ScratchpadCard: View {
             Button(action: newEntry) {
                 VStack(spacing: Space.s) {
                     Image(icon: "plus")
-                        .font(.system(size: 16, weight: .medium))
+                        .uiFont(.system(size: 16, weight: .medium))
                     Text("New Entry")
-                        .font(.system(size: 12, weight: .medium))
+                        .uiFont(.system(size: 12, weight: .medium))
                 }
                 .foregroundStyle(Color(nsColor: palette.tint))
                 .frame(width: 112)
@@ -527,16 +532,16 @@ private struct FolderTile: View {
         Button(action: action) {
             HStack(spacing: Space.l) {
                 IconGlyph(icon)
-                    .font(.system(size: 15))
+                    .uiFont(.system(size: 15))
                     .foregroundStyle(Color(nsColor: palette.tint).opacity(0.85))
                     .frame(width: 22)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(folder)
-                        .font(.system(size: 13, weight: .medium))
+                        .uiFont(.system(size: 13, weight: .medium))
                         .foregroundStyle(Color(nsColor: palette.text))
                         .lineLimit(1)
                     Text(count == 1 ? "1 note" : "\(count) notes")
-                        .font(.system(size: 11))
+                        .uiFont(.system(size: 11))
                         .foregroundStyle(Color(nsColor: palette.secondary))
                 }
                 Spacer(minLength: 0)

@@ -97,9 +97,9 @@ struct SharePopover: View {
         HStack(alignment: .firstTextBaseline, spacing: Space.m) {
             VStack(alignment: .leading, spacing: Space.xxs) {
                 Text(publication == nil ? "Publish to the web" : "Published to the web")
-                    .font(.dsTitle)
+                    .uiFont(.dsTitle)
                 Text(subtitle)
-                    .font(.dsCallout)
+                    .uiFont(.dsCallout)
                     .foregroundStyle(Palette.secondaryLabel)
                     .lineLimit(1)
             }
@@ -174,7 +174,7 @@ struct SharePopover: View {
                 Button { SettingsWindowController.show(pane: .cloud) } label: {
                     ActionRow(systemImage: "gearshape", title: "Manage published notes") {
                         Image(icon: "chevron.right")
-                            .font(.system(size: 10, weight: .semibold))
+                            .uiFont(.system(size: 10, weight: .semibold))
                             .foregroundStyle(Palette.tertiaryLabel)
                     }
                 }
@@ -260,7 +260,7 @@ private struct PopoverButtonStyle: ButtonStyle {
 
         var body: some View {
             configuration.label
-                .font(.dsBody.weight(isPrimary ? .semibold : .medium))
+                .uiFont(.dsBody.weight(isPrimary ? .semibold : .medium))
                 .foregroundStyle(isPrimary ? AnyShapeStyle(.white) : AnyShapeStyle(Palette.label))
                 .frame(maxWidth: .infinity)
                 .frame(height: 32)
@@ -312,7 +312,7 @@ private struct LiveChip: View {
                 .fill(.green)
                 .frame(width: 6, height: 6)
             Text("Live")
-                .font(.dsCaption.weight(.semibold))
+                .uiFont(.dsCaption.weight(.semibold))
         }
         .foregroundStyle(.green)
         .padding(.horizontal, Space.m)
@@ -344,7 +344,7 @@ private struct LinkField: View {
                     .contentTransition(.symbolEffect(.replace))
                     .frame(width: 16)
             }
-            .font(.dsBody)
+            .uiFont(.dsBody)
             .padding(.horizontal, Space.l - 2)
             .frame(height: 32)
             .background(isHovering ? Palette.selectedFill : Palette.fill, in: .rect(cornerRadius: Radius.field))
@@ -376,9 +376,9 @@ private struct ActionRow<Trailing: View>: View {
                 .foregroundStyle(Palette.label)
             Spacer(minLength: Space.m)
             trailing()
-                .font(.dsCallout)
+                .uiFont(.dsCallout)
         }
-        .font(.dsBody)
+        .uiFont(.dsBody)
         .padding(.horizontal, Space.m)
         .frame(height: 30)
         .contentShape(.rect)
@@ -419,7 +419,7 @@ private struct Footnote: View {
             Text(text)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .font(.dsCallout)
+        .uiFont(.dsCallout)
         .foregroundStyle(Palette.secondaryLabel)
     }
 }
@@ -437,7 +437,7 @@ private struct FeedbackBanner: View {
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
-        .font(.dsCallout)
+        .uiFont(.dsCallout)
         .padding(Space.m + 2)
         .background(tint.opacity(0.1), in: .rect(cornerRadius: Radius.field))
     }
@@ -466,10 +466,10 @@ private struct PagePreview: View {
                 }
                 Spacer(minLength: Space.s)
                 HStack(spacing: 3) {
-                    Image(icon: "lock.fill").font(.system(size: 7))
+                    Image(icon: "lock.fill").uiFont(.system(size: 7))
                     Text(address).lineLimit(1).truncationMode(.middle)
                 }
-                .font(.system(size: 10))
+                .uiFont(.system(size: 10))
                 .foregroundStyle(Palette.secondaryLabel)
                 .padding(.horizontal, Space.m)
                 .frame(height: 16)
@@ -494,12 +494,12 @@ private struct PagePreview: View {
                 VStack(alignment: .leading, spacing: 6) {
                     if let symbol = library.icon(for: note) {
                         IconGlyph(symbol)
-                            .font(.system(size: 22))
+                            .uiFont(.system(size: 22))
                             .foregroundStyle(Color(nsColor: palette.accent))
                             .padding(.top, cover == nil ? 0 : -22)
                     }
                     Text(note.displayTitle)
-                        .font(.system(size: 14, weight: .bold))
+                        .uiFont(.system(size: 14, weight: .bold))
                         .foregroundStyle(Color(nsColor: palette.text))
                         .lineLimit(1)
                     VStack(alignment: .leading, spacing: 5) {

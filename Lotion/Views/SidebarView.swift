@@ -134,7 +134,7 @@ struct SidebarView: View {
         let results = library.search(state.searchText)
         if results.isEmpty {
             Text("No notes match “\(state.searchText.trimmingCharacters(in: .whitespaces))”.")
-                .font(.dsCallout)
+                .uiFont(.dsCallout)
                 .foregroundStyle(Palette.secondaryLabel)
                 .padding(.vertical, Space.s)
                 .selectionDisabled()
@@ -216,7 +216,7 @@ private struct TaskListRow: View {
     var body: some View {
         let index = state.library.tasks
         let (title, symbol, tag, help, count): (String, String, UUID, String, Int?) = switch list {
-        case .today: ("Today", "sun.max", AppState.todayID, "Tasks due today and overdue (⌘1)", index.todayCount)
+        case .today: ("Today", TodayGlyph.symbol, AppState.todayID, "Tasks due today and overdue (⌘1)", index.todayCount)
         case .upcoming: ("Upcoming", "calendar", AppState.upcomingID, "Tasks with a date, by day (⌘2)", nil)
         default: ("Inbox", "tray", AppState.inboxID, "Tasks from Quick Add, waiting for a date (⌘3)", index.inboxTasks().count)
         }
@@ -367,7 +367,7 @@ private struct SearchResultRow: View {
                     .lineLimit(1)
                 if !result.snippet.isEmpty {
                     Text(result.snippet)
-                        .font(.dsCaption)
+                        .uiFont(.dsCaption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -383,13 +383,17 @@ private struct SearchResultRow: View {
 
 /// Today's glyph: an empty calendar page with the day of the month written
 /// on it, turned over at midnight.
-private struct TodayGlyph: View {
+/// Today's icon: a calendar page showing the date. Used by the sidebar and Home.
+struct TodayGlyph: View {
     @State private var day = Self.today
 
     private static var today: String { String(format: "%02d", Calendar.current.component(.day, from: .now)) }
 
+    /// Stands for this glyph wherever an icon is named, as on Home.
+    static let symbol = "calendar.today"
+
     var body: some View {
-        Image(icon: "calendar.today")
+        Image(icon: Self.symbol)
             .overlay {
                 // The page below the calendar's header line, in the icon's
                 // 24-unit grid: the shell runs 2–22, the header sits at 10.
@@ -433,7 +437,7 @@ private extension View {
     /// A row's glyph: tinted, sized and centred in the glyph column.
     func sidebarGlyph() -> some View {
         modifier(SidebarGlyphTint())
-            .font(.system(size: SidebarMetrics.glyphSize))
+            .uiFont(.system(size: SidebarMetrics.glyphSize))
             .frame(width: SidebarMetrics.glyphColumn, alignment: .center)
     }
 }
@@ -448,10 +452,10 @@ private struct SidebarFooter: View {
         Button { SettingsWindowController.show() } label: {
             HStack(spacing: 8) {
                 Image(icon: "gearshape.fill")
-                    .font(.system(size: 15))
+                    .uiFont(.system(size: 15))
                     .frame(width: 20)
                 Text("Settings")
-                    .font(.system(size: 13))
+                    .uiFont(.system(size: 13))
                 Spacer(minLength: 0)
             }
             .foregroundStyle(Palette.label)
