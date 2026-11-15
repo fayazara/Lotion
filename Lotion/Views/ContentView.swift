@@ -5,6 +5,7 @@
 //  The window: sidebar, the note on its themed canvas, and the inspector.
 //
 
+import AppKit
 import SwiftUI
 
 struct ContentView: View {
@@ -23,6 +24,7 @@ struct ContentView: View {
     @AppStorage(Prefs.tableWidth) private var tableWidth: TableWidth = .fit
     @Environment(\.colorScheme) private var colorScheme
     @FocusState private var isSearchFocused: Bool
+    @State private var didSettleLaunchFocus = false
     @Environment(\.openWindow) private var openWindow
 
     private var editorStyle: EditorStyle {
@@ -54,7 +56,20 @@ struct ContentView: View {
         }
         .searchable(text: $state.searchText, placement: .sidebar, prompt: "Search")
         .searchFocused($isSearchFocused)
-        .onChange(of: state.searchFocusRequest) { isSearchFocused = true }
+        .onChange(of: state.searchFocusRequest) { didSettleLaunchFocus = true; isSearchFocused = true }
+        // The sidebar list can't take focus (that keeps its selection grey),
+        // so when the window first becomes key AppKit hands focus to the next
+        // thing in line, the search field. Take it back; ⌘F still finds it.
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+            DispatchQueue.main.async { settleLaunchFocus() }
+        }
+        .task {
+            for _ in 0..<10 where !didSettleLaunchFocus {
+                settleLaunchFocus()
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            didSettleLaunchFocus = true
+        }
         .onAppear {
             state.isMainWindowOpen = true
             state.openMainWindow = { [openWindow] in openWindow(id: "main") }
@@ -114,6 +129,12 @@ struct ContentView: View {
             state.library.saveAll()
             if let note = state.selectedNote { UserDefaults.standard.set(note.url.path, forKey: Prefs.lastNotePath) }
         }
+    }
+
+    private func settleLaunchFocus() {
+        guard !didSettleLaunchFocus, isSearchFocused else { return }
+        didSettleLaunchFocus = true
+        isSearchFocused = false
     }
 
     private var pageTitle: String {

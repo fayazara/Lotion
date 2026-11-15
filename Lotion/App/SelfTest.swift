@@ -127,6 +127,12 @@ enum SelfTest {
 
     private static func run(_ state: AppState) async {
         await wait(1.5)
+        if let window = NSApp.windows.first(where: { $0.isKeyWindow }) {
+            let searching = (window.firstResponder as? NSText)?.delegate is NSSearchField
+            check(!searching, "the search field doesn't take focus when Lotion opens", "\(window.firstResponder.map { String(describing: Swift.type(of: $0)) } ?? "nil")")
+        } else {
+            check(false, "the search field doesn't take focus when Lotion opens", "no key window")
+        }
         if UserDefaults.standard.string(forKey: Prefs.launchView) != LaunchView.lastNote.rawValue {
             check(state.isHomeShowing && state.selection == AppState.homeID, "Lotion opens on Home")
         }
