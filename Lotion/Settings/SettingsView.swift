@@ -566,12 +566,21 @@ private struct EditorPane: View {
     @AppStorage(Prefs.readableWidth) private var readableWidth: ReadableWidth = .medium
     @AppStorage(Prefs.spellCheck) private var spellCheck = true
     @AppStorage(Prefs.tableWidth) private var tableWidth: TableWidth = .fit
+    @AppStorage(Prefs.launchView) private var launchView: LaunchView = .home
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         let palette = theme.palette(dark: colorScheme == .dark)
         let isDark = colorScheme == .dark
         SettingsPage {
+            Section("Opening") {
+                Picker(selection: $launchView) {
+                    ForEach(LaunchView.allCases) { Text($0.title).tag($0) }
+                } label: {
+                    SettingsControlLabel("When Lotion opens", detail: "Start on Home, or pick up in the note you were last in.")
+                }
+            }
+
             Section("Type") {
                 TypePreview(palette: palette, noteFont: noteFont, size: noteFontSize, lineSpacing: lineSpacing, codeFont: codeFont)
                     .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))

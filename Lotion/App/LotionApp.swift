@@ -105,6 +105,11 @@ struct LotionCommands: Commands {
             Button("New Folder") { state.newFolder() }
                 .keyboardShortcut("n", modifiers: [.command, .shift])
             Divider()
+            Button("Go to Home") {
+                state.showMainWindow()
+                state.showHome()
+            }
+                .keyboardShortcut("h", modifiers: [.command, .shift])
             Button("Open Scratchpad") {
                 state.showMainWindow()
                 state.openScratchpad()

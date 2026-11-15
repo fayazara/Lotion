@@ -119,6 +119,15 @@ struct ThemePalette: Equatable {
     let rule: NSColor
     let shikiTheme: String
     let isDark: Bool
+    /// The theme picks its own accent, rather than following System Settings.
+    let hasOwnAccent: Bool
+    /// The theme colors headings apart from body text.
+    let colorsHeadings: Bool
+
+    /// The theme's signature color, for glyphs in the sidebar and on Home:
+    /// its heading color when it has one, else its own accent. Nil for a
+    /// theme with neither, whose glyphs stay a quiet grey.
+    var glyph: NSColor? { colorsHeadings ? heading : hasOwnAccent ? accent : nil }
 
     init(_ spec: ThemeSpec) {
         self.init(background: spec.background, text: spec.text, secondary: spec.secondary, marker: spec.marker, accent: spec.accent,
@@ -135,6 +144,8 @@ struct ThemePalette: Equatable {
         self.secondary = NSColor(hex: secondary)
         self.marker = NSColor(hex: marker)
         self.accent = accent.map { NSColor(hex: $0) } ?? Self.systemAccent(isDark: isDark)
+        self.hasOwnAccent = accent != nil
+        self.colorsHeadings = heading != nil && heading != text
         self.codeBackground = NSColor(hex: codeBackground)
         self.inlineCode = NSColor(hex: inlineCode)
         self.rule = NSColor(hex: rule)

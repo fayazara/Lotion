@@ -63,8 +63,14 @@ struct SidebarView: View {
     // MARK: Library
 
     @ViewBuilder private var sections: some View {
-        if let scratchpad = library.scratchpad {
-            Section {
+        // Home and the scratchpad sit together, as the places that aren't notes in a list.
+        Section {
+            SidebarRow(title: "Home") {
+                Image(systemName: "house")
+            }
+            .tag(AppState.homeID)
+            .help("Recent notes, the scratchpad and folders (⇧⌘H)")
+            if let scratchpad = library.scratchpad {
                 SidebarRow(title: "Scratchpad", count: scratchpad.entryCount) {
                     Image(systemName: "note.text")
                 }
@@ -318,12 +324,8 @@ private struct SidebarGlyphTint: ViewModifier {
     @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
-        let isDark = colorScheme == .dark
-        let spec = isDark ? theme.dark ?? theme.light : theme.light ?? theme.dark
-        if let spec, let heading = spec.heading, heading != spec.text {
-            content.foregroundStyle(Color(nsColor: theme.palette(dark: isDark).heading))
-        } else if spec?.accent != nil {
-            content.foregroundStyle(Color(nsColor: theme.palette(dark: isDark).accent))
+        if let glyph = theme.palette(dark: colorScheme == .dark).glyph {
+            content.foregroundStyle(Color(nsColor: glyph))
         } else {
             content.foregroundStyle(.secondary)
         }

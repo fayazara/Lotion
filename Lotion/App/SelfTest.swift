@@ -121,6 +121,14 @@ enum SelfTest {
 
     private static func run(_ state: AppState) async {
         await wait(1.5)
+        if UserDefaults.standard.string(forKey: Prefs.launchView) != LaunchView.lastNote.rawValue {
+            check(state.isHomeShowing && state.selection == AppState.homeID, "Lotion opens on Home")
+        }
+        // The flows below start in the welcome note.
+        if state.selectedNote == nil, let first = state.library.notes.first {
+            state.selection = first.id
+            await wait(0.8)
+        }
         if UserDefaults.standard.string(forKey: "LotionSelfTestOnly") == "documents" {
             await documents(state)
             log(failures == 0 ? "DONE all passed" : "DONE \(failures) failed")

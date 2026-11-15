@@ -35,7 +35,7 @@ final class AppState {
         expandedFolders = Set(UserDefaults.standard.stringArray(forKey: Self.expandedKey) ?? [])
         library.load()
         if DemoLibrary.isEnabled { Task { [library] in await DemoLibrary.fetchCovers(into: library) } }
-        selection = library.pinnedNotes.first?.id ?? library.notes(in: nil).first?.id
+        selection = Self.launchSelection(in: library)
         editor.openNote = { [weak self] id in self?.selection = id }
     }
 
@@ -49,9 +49,33 @@ final class AppState {
     }
 
     var selectedNote: Note? { library.note(id: selection) }
+
+    // MARK: Home
+
+    /// The sidebar's Home row. Home shows whenever no note is selected.
+    static let homeID = UUID()
+
+    var isHomeShowing: Bool { selectedNote == nil }
+
+    func showHome() {
+        searchText = ""
+        selection = Self.homeID
+    }
+
+    /// Home, or the note open when Lotion last quit, as Settings says.
+    private static func launchSelection(in library: Library) -> Note.ID? {
+        let preference = LaunchView(rawValue: UserDefaults.standard.string(forKey: Prefs.launchView) ?? "") ?? .home
+        guard preference == .lastNote else { return homeID }
+        if let path = UserDefaults.standard.string(forKey: Prefs.lastNotePath) {
+            let all = library.notes + [library.scratchpad].compactMap { $0 }
+            if let note = all.first(where: { $0.url.path == path }) { return note.id }
+        }
+        return library.pinnedNotes.first?.id ?? library.notes(in: nil).first?.id ?? homeID
+    }
     var isSearching: Bool { !searchText.trimmingCharacters(in: .whitespaces).isEmpty }
 
     private func selectionDidChange(from old: Note.ID?) {
+        if let note = selectedNote { UserDefaults.standard.set(note.url.path, forKey: Prefs.lastNotePath) }
         if let old, let previous = library.note(id: old) {
             if previous.isBlank {
                 library.discardIfBlank(previous)

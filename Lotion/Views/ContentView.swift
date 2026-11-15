@@ -47,7 +47,7 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 340)
         } detail: {
             detail
-                .navigationTitle(state.selectedNote?.displayTitle ?? "Lotion")
+                .navigationTitle(state.selectedNote?.displayTitle ?? "Home")
                 .navigationSubtitle(state.selectedNote.map { note in
                     note.isScratchpad ? (note.entryCount == 1 ? "1 entry" : "\(note.entryCount) entries") : note.folder ?? "Notes"
                 } ?? "")
@@ -108,6 +108,7 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willResignActiveNotification)) { _ in
             state.library.saveAll()
+            if let note = state.selectedNote { UserDefaults.standard.set(note.url.path, forKey: Prefs.lastNotePath) }
         }
     }
 
@@ -125,19 +126,7 @@ struct ContentView: View {
                         }
                 }
             } else {
-                EmptyStateView(
-                    systemImage: "square.and.pencil",
-                    title: state.library.notes.isEmpty ? "No Notes" : "No Note Selected",
-                    message: state.library.notes.isEmpty
-                        ? "Notes are Markdown files, kept in a folder you can open in Finder."
-                        : "Choose a note in the sidebar, or start a new one."
-                ) {
-                    Button("New Note") { state.newNote() }
-                        .buttonStyle(.glassProminent)
-                        .controlSize(.large)
-                }
-                // No scroll view here, so keep the toolbar from drawing its own ground.
-                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+                HomeView(state: state, palette: editorStyle.palette)
             }
         }
         .background(canvas.ignoresSafeArea())

@@ -26,6 +26,17 @@ enum Prefs {
     static let saveVideos = "saveVideos"
     static let linkPreviews = "linkPreviews"
     static let cloudURL = "cloudURL"
+    static let launchView = "launchView"
+    /// The last note shown, by path, to open it again at launch.
+    static let lastNotePath = "lastNotePath"
+}
+
+/// What the main window shows when Lotion opens.
+enum LaunchView: String, CaseIterable, Identifiable {
+    case home, lastNote
+
+    var id: String { rawValue }
+    var title: String { self == .home ? "Home" : "Last Note" }
 }
 
 // MARK: - Fonts
