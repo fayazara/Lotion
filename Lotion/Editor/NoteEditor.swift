@@ -40,7 +40,8 @@ final class EditorController {
             return
         }
         run(on: note) { editor in
-            if let first = editor.blocks.first, first.text.length == 0 || editor.blocks.count == 1 {
+            // The scratchpad's newest entry is its last.
+            if !editor.isScratchpad, let first = editor.blocks.first, first.text.length == 0 || editor.blocks.count == 1 {
                 editor.focus(first.id, .end)
             } else if let last = editor.blocks.last(where: { $0.kind.isEditable }) {
                 editor.focus(last.id, .end)
@@ -322,6 +323,10 @@ struct NoteEditor: NSViewRepresentable {
             if let previousFocus {
                 // The file changed on disk: keep the caret near where it was.
                 editor.apply(previousFocus)
+            } else if note.isScratchpad {
+                // New entries go at the end, so the scratchpad opens there,
+                // like a chat, rather than on its oldest entry.
+                scrollToEnd()
             } else if let state = viewStates[note.id] {
                 restoreScroll(state.scroll)
                 if editor.window?.firstResponder is BlockTextView || editor.window?.firstResponder === editor {
@@ -343,6 +348,20 @@ struct NoteEditor: NSViewRepresentable {
         func rememberViewState() {
             guard let editor, let noteID, let scrollView = editor.enclosingScrollView else { return }
             viewStates[noteID] = (editor.viewState(), scrollView.contentView.bounds.origin.y)
+        }
+
+        private func scrollToEnd() {
+            guard let scrollView = editor?.enclosingScrollView else { return }
+            func scroll() {
+                guard let document = scrollView.documentView else { return }
+                let clip = scrollView.contentView
+                let bottom = document.frame.height - clip.bounds.height + scrollView.contentInsets.bottom
+                clip.scroll(to: NSPoint(x: 0, y: max(-scrollView.contentInsets.top, bottom)))
+                scrollView.reflectScrolledClipView(clip)
+            }
+            scroll()
+            // Layout can settle after the first pass; apply once more.
+            DispatchQueue.main.async { scroll() }
         }
 
         private func restoreScroll(_ y: CGFloat?) {

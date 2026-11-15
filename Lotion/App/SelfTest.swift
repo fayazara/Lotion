@@ -2009,6 +2009,30 @@ enum SelfTest {
             await wait(0.8)
             check(state.editor.editor?.isScratchpad == false, "leaving the scratchpad leaves its mode too")
         }
+
+        // A long scratchpad opens on its newest entry, at the end.
+        guard let note = state.library.notes.first ?? state.library.createNote(in: nil) else {
+            check(false, "a note to leave the scratchpad for")
+            return
+        }
+        let entries = (1...40).map { "<!-- entry 2026-10-\(String(format: "%02d", $0 % 28 + 1))T09:\(String(format: "%02d", $0)):00Z -->\n\nThought number \($0)\n" }
+        state.library.update(pad, text: entries.joined(separator: "\n"))
+        state.library.save(pad)
+        for (label, open) in [("from the sidebar", { state.selection = pad.id }), ("with ⌘0", { state.openScratchpad() })] {
+            state.selection = note.id
+            await wait(0.8)
+            open()
+            await wait(1.0)
+            if let editor = state.editor.editor, editor.isScratchpad, let scrollView = editor.enclosingScrollView {
+                let visible = scrollView.contentView.documentVisibleRect
+                check(visible.maxY >= editor.frame.height - 4 && visible.minY > 100,
+                      "the scratchpad opens at its end \(label)", "visible \(visible), page \(editor.frame.height)")
+            } else {
+                check(false, "the scratchpad opens at its end \(label)", "no scratchpad editor")
+            }
+        }
+        state.selection = note.id
+        await wait(0.5)
     }
 
     // MARK: Quick note
