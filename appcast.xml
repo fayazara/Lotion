@@ -28,6 +28,26 @@
     -->
 
     <item>
+      <title>Version 0.0.10</title>
+      <sparkle:version>10</sparkle:version>
+      <sparkle:shortVersionString>0.0.10</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 15 Nov 2026 13:29:02 +0000</pubDate>
+      <description><![CDATA[
+        <h2>What's New in 0.0.10</h2>
+        <ul>
+          <li>The scratchpad now opens at the bottom, on your newest entries</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/fayazara/Lotion/releases/download/v0.0.10/Lotion.dmg"
+        type="application/octet-stream"
+        sparkle:edSignature="7Qq+GMat8IP5/z3wLzBRoOKiFrsQxQGTL2NPSRDHLOv2NPdFuxq14sEoi3o7QHA0EfKJxacMXjqOLHV7FyD+Ag=="
+        length="15658534"
+      />
+    </item>
+
+    <item>
       <title>Version 0.0.9</title>
       <sparkle:version>9</sparkle:version>
       <sparkle:shortVersionString>0.0.9</sparkle:shortVersionString>
